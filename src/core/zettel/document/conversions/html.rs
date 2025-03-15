@@ -19,6 +19,7 @@ impl AsHtml for document::node::Node {
         use maud::html;
 
         match self {
+            Node::Newline => "<br/>".to_string(),
             Node::Text(text) => html! { (text) }.into_string(),
             Node::Styled(style, node) => {
                 let tag_name = convert_style(style);
@@ -68,6 +69,51 @@ impl AsHtml for document::block::CodeBlock {
     }
 }
 
+impl AsHtml for document::block::callout::Callout {
+    fn as_html(&self) -> String {
+        use maud::html;
+
+        let kind = match self.kind {
+            document::block::callout::Kind::Quote => "quote",
+            document::block::callout::Kind::Note => "note",
+            document::block::callout::Kind::Warning => "warning",
+            document::block::callout::Kind::Info => "info",
+            document::block::callout::Kind::Error => "error",
+        };
+
+        // Use a different background color hue for each kind of callout (use pastel colors, hardcoded as hex codes)
+        let (background, border) = match self.kind {
+            /*
+             * Quote:   Grey-ish
+             * Note:    Blue-ish
+             * Info:    Green-ish
+             * Warning: Yellow-ish
+             * Error:   Red-ish
+             */
+            document::block::callout::Kind::Quote => ("#f0f0f0", "#d0d0d0"),
+            document::block::callout::Kind::Note => ("#f0f8ff", "#add8e6"),
+            document::block::callout::Kind::Info => ("#f0fff0", "#90ee90"),
+            document::block::callout::Kind::Warning => ("#ffffe0", "#ffd700"),
+            document::block::callout::Kind::Error => ("#ffe0e0", "#ff6961"),
+        };
+
+        let blocks = self
+            .blocks
+            .iter()
+            .map(|block| block.as_html())
+            .collect::<String>();
+
+        // The way we turn this into HTML is by using a <div> element, setting the background color
+        // explicitly, adding a border and a margin, and then rendering the blocks inside
+
+        html! {
+            div style=(format!("border: 4px solid; margin: 1em 0; padding: 1em; background-color: {}; border-color: {}; border-radius: 0.5em;", background, border)) {
+                (maud::PreEscaped(blocks))
+            }
+        }.into_string()
+    }
+}
+
 impl AsHtml for document::block::Paragraph {
     fn as_html(&self) -> String {
         use maud::html;
@@ -90,6 +136,7 @@ impl AsHtml for document::block::Block {
             Block::Heading(heading) => heading.as_html(),
             Block::Line => "<hr>".to_string(),
             Block::CodeBlock(codeblock) => codeblock.as_html(),
+            Block::Callout(callout) => callout.as_html(),
             Block::Paragraph(paragraph) => paragraph.as_html(),
         }
     }

@@ -17,6 +17,26 @@ pub struct CodeBlock {
     pub code: String,
 }
 
+pub mod callout {
+    use crate::core::zettel::document::Blocks;
+
+
+    #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+    pub enum Kind {
+        Quote,
+        Note,
+        Warning,
+        Info,
+        Error,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+    pub struct Callout {
+        pub kind: Kind,
+        pub blocks: Blocks,
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct Paragraph {
     pub nodes: super::Nodes,
@@ -27,5 +47,6 @@ pub enum Block {
     Heading(Heading),
     Line,
     CodeBlock(CodeBlock),
+    Callout(callout::Callout),
     Paragraph(Paragraph),
 }

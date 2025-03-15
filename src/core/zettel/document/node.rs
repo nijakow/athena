@@ -18,6 +18,7 @@ pub struct Reference {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum Node {
+    Newline,
     Text(String),
     Styled(Style, Box<Node>),
     Reference(Reference),
