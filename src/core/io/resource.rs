@@ -7,8 +7,8 @@ pub enum Type {
 impl Type {
     pub fn from_extension(extension: &str) -> Option<Type> {
         match extension {
-            "athena-json" => Some(Type::Athena),
-            _             => None,
+            "zson" => Some(Type::Athena),
+            _      => None,
         }
     }
 }
@@ -16,6 +16,36 @@ impl Type {
 
 pub struct Metadata {
     pub resource_type: Option<Type>,
+}
+
+
+pub struct SplitJson {
+    pub header: serde_json::Value,
+    pub body: serde_json::Value,
+}
+
+impl SplitJson {
+    pub fn parse<S: ToString>(content: S) -> Result<SplitJson, Box<dyn std::error::Error>> {
+        /*
+         * The SplitJson format is a file that begins with `---`, followed by a JSON object, followed by `---`, followed by another JSON object.
+         */
+
+        let content = content.to_string();
+
+        // Find the position of the first `---`
+        let first_delimiter = content.find("---").ok_or("Failed to find first delimiter")?;
+        let second_delimiter = content[first_delimiter + 3..].find("---").ok_or("Failed to find second delimiter")?;
+
+        // Get the header and body JSON objects
+        let header = &content[first_delimiter + 3..first_delimiter + 3 + second_delimiter];
+        let body = &content[first_delimiter + 3 + second_delimiter + 3..];
+
+        // Parse the JSON objects
+        let header = serde_json::from_str(header)?;
+        let body = serde_json::from_str(body)?;
+
+        Ok(SplitJson { header, body })
+    }
 }
 
 
@@ -43,10 +73,11 @@ impl Resource {
         std::fs::read_to_string(&self.path)
     }
 
-    pub fn read_to_json(&self) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
-        let file = std::fs::File::open(&self.path)?;
-        let reader = std::io::BufReader::new(file);
+    pub fn read_to_split_json(&self) -> Result<SplitJson, Box<dyn std::error::Error>> {
+        // Get the content from the bytes as UTF-8
+        let content = std::fs::read_to_string(&self.path)?;
 
-        Ok(serde_json::from_reader(reader)?)
+        // Parse the content into a SplitJson object
+        SplitJson::parse(content)
     }
 }

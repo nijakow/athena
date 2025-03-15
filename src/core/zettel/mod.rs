@@ -1,4 +1,4 @@
-use super::io::resource;
+use super::io::resource::{self, SplitJson};
 
 pub mod document;
 
@@ -44,7 +44,7 @@ impl Body {
     }
 
     pub(crate) fn from_json(_json: &serde_json::Value) -> Result<Body, ()> {
-        Err(())
+        Ok(Body::dummy())
     }
 
     pub fn as_document(&self) -> Option<&document::Document> {
@@ -70,9 +70,9 @@ impl Zettel {
         Self::new(Header {}, Body::dummy())
     }
 
-    fn from_serde_json(json: &serde_json::Value) -> Result<Zettel, ()> {
-        let body = Body::from_json(json.get("body").ok_or(())?)?;
-        let header = Header::from_json(json)?;
+    fn from_split_json(split_json: &SplitJson) -> Result<Zettel, ()> {
+        let body = Body::from_json(&split_json.body)?;
+        let header = Header::from_json(&split_json.header)?;
 
         Ok(Zettel::new(header, body))
     }
@@ -82,8 +82,8 @@ impl Zettel {
 
         match metadata.resource_type {
             Some(resource::Type::Athena) => {
-                let json = resource.read_to_json()?;
-                let zettel = Zettel::from_serde_json(&json).map_err(|_| "Failed to parse Zettel")?;
+                let split_json = resource.read_to_split_json()?;
+                let zettel = Zettel::from_split_json(&split_json).map_err(|_| "Failed to parse Zettel")?;
 
                 Ok(zettel)
             }

@@ -6,7 +6,9 @@ use crate::core::{vault, zettel::{self, document::conversions::html::AsHtml}};
 
 
 async fn list_zettels(vault: web::Data<Arc<vault::Vault>>) -> impl Responder {
-    let mut zettels = vault.list_zettels();
+    let mut zettels: Vec<(zettel::Id, String)> = vault.list_zettels().into_iter().map(|id| {
+        (id, String::from("Hello"))
+    }).collect::<Vec<_>>();
 
     zettels.sort_by(|(a, _), (b, _)| a.id().cmp(b.id()));
 

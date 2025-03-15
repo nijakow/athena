@@ -1,46 +1,19 @@
-use std::collections::HashMap;
 
-use super::{config, zettel};
+use super::{config, io::resource, zettel};
 
 mod files;
 
-struct ZettelInfo {
-    title: String,
-}
-
-impl ZettelInfo {
-    fn new(title: String) -> ZettelInfo {
-        ZettelInfo { title }
-    }
-
-    fn title(&self) -> &str {
-        &self.title
-    }
-}
 
 pub struct Vault {
     files: files::Files,
-    zettels: HashMap<zettel::Id, ZettelInfo>,
 }
 
 pub type VaultOpenResult = Result<Vault, ()>;
 
 impl Vault {
     fn new(config: config::Config) -> Vault {
-        let dummy_zettels = vec![
-            ("a", "First zettel"),
-            ("b", "Second zettel"),
-            ("c", "Third zettel"),
-        ];
-
-        let zettels = dummy_zettels
-            .into_iter()
-            .map(|(id, title)| (zettel::Id::with_id(id), ZettelInfo::new(title.to_string())))
-            .collect();
-
         Vault {
             files: files::Files::new(config.vault_path.unwrap()),
-            zettels,
         }
     }
 
@@ -48,20 +21,31 @@ impl Vault {
         Ok(Self::new(config))
     }
 
-    pub fn list_zettels(&self) -> Vec<(zettel::Id, &str)> {
-        self.zettels
-            .iter()
-            .map(|(id, info)| (id.clone(), info.title()))
-            .collect()
+    pub fn list_zettels(&self) -> Vec<zettel::Id> {
+        self.files.list_files().iter().filter_map(|path| {
+            let id = path.file_stem()?.to_str()?;
+            Some(zettel::Id::with_id(id))
+        }).collect()
+    }
+
+    fn find_resource_for_id(&self, id: &zettel::Id) -> Option<resource::Resource> {
+        let file = self.files.file_by_id(&id);
+        
+        if file.exists() {
+            Some(resource::Resource::from_path(file))
+        } else {
+            None
+        }
     }
 
     pub fn load(&self, id: &zettel::Id) -> Option<zettel::Zettel> {
-        let is_present = self.zettels.contains_key(id);
+        let resource = self.find_resource_for_id(id);
 
-        if is_present {
-            Some(zettel::Zettel::dummy())
-        } else {
-            None
+        match resource {
+            Some(resource) => zettel::Zettel::from_resource(resource).map_err(|e| {
+                eprintln!("Failed to load Zettel: {:?}", e);
+            }).ok(),
+            None => None,
         }
     }
 }
