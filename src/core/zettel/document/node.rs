@@ -2,7 +2,7 @@ use crate::core::zettel;
 
 use super::Nodes;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum Style {
     Bold,
     Italic,
@@ -10,16 +10,16 @@ pub enum Style {
     Strikethrough,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Link {
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+pub struct Reference {
     pub target: zettel::Id,
     pub caption: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum Node {
     Text(String),
     Styled(Style, Box<Node>),
-    Link(Link),
+    Reference(Reference),
     Grouped(Nodes),
 }

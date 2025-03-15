@@ -26,7 +26,7 @@ impl AsHtml for document::node::Node {
 
                 format!("<{}>{}</{}>", tag_name, html, tag_name)
             }
-            Node::Link(link) => {
+            Node::Reference(link) => {
                 let target = &link.target;
                 let caption = &link.caption;
 

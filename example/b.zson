@@ -1,0 +1,63 @@
+---
+{
+    "title": "A brief history of time"
+}
+---
+{
+    "elements": [
+        {
+            "Heading": {
+                "level": 1,
+                "text": "Introduction"
+            }
+        },
+        {
+            "Paragraph": {
+                "nodes": [
+                    {
+                        "Text": "This is a "
+                    },
+                    {
+                        "Styled": [
+                            "Italic",
+                            {
+                                "Text": "very"
+                            }
+                        ]
+                    },
+                    {
+                        "Text": " brief history of time."
+                    }
+                ]
+            }
+        },
+        "Line",
+        {
+            "Heading": {
+                "level": 2,
+                "text": "Chapter 1"
+            }
+        },
+        {
+            "Paragraph": {
+                "nodes": [
+                    {
+                        "Text": "In the beginning, there was nothing."
+                    }
+                ]
+            }
+        },
+        {
+            "Paragraph": {
+                "nodes": [
+                    {
+                        "Reference": {
+                            "target": "a",
+                            "caption": "Have a look at this."
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

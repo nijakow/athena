@@ -8,6 +8,20 @@ pub struct Id {
     id: String,
 }
 
+impl serde::Serialize for Id {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.id.serialize(serializer)
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for Id {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let id = String::deserialize(deserializer)?;
+        Ok(Id { id })
+    }
+}
+
+
 impl Id {
     pub(crate) fn with_id<S: ToString>(id: S) -> Id {
         Id { id: id.to_string() }
@@ -45,12 +59,8 @@ pub enum Body {
 }
 
 impl Body {
-    pub(crate) fn dummy() -> Body {
-        Body::Document(Box::new(document::Document::test()))
-    }
-
-    pub(crate) fn from_json(_json: &serde_json::Value) -> Result<Body, ()> {
-        Ok(Body::dummy())
+    pub(crate) fn from_json(json: &serde_json::Value) -> Result<Body, ()> {
+        Ok(Body::Document(Box::new(document::conversions::json::json_to_document(&json)?)))
     }
 
     pub fn as_document(&self) -> Option<&document::Document> {

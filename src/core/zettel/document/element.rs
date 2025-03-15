@@ -1,4 +1,5 @@
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct Heading {
     pub level: u8,
     pub text: String,
@@ -10,12 +11,12 @@ impl Heading {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct Paragraph {
     pub nodes: super::Nodes,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum Element {
     Heading(Heading),
     Line,
