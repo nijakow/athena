@@ -17,7 +17,7 @@ pub struct Paragraph {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-pub enum Element {
+pub enum Block {
     Heading(Heading),
     Line,
     Paragraph(Paragraph),

@@ -41,7 +41,7 @@ impl AsHtml for document::node::Node {
     }
 }
 
-impl AsHtml for document::element::Heading {
+impl AsHtml for document::block::Heading {
     fn as_html(&self) -> String {
         use maud::html;
 
@@ -57,7 +57,7 @@ impl AsHtml for document::element::Heading {
     }
 }
 
-impl AsHtml for document::element::Paragraph {
+impl AsHtml for document::block::Paragraph {
     fn as_html(&self) -> String {
         use maud::html;
 
@@ -71,23 +71,23 @@ impl AsHtml for document::element::Paragraph {
     }
 }
 
-impl AsHtml for document::element::Element {
+impl AsHtml for document::block::Block {
     fn as_html(&self) -> String {
-        use document::element::Element;
+        use document::block::Block;
 
         match self {
-            Element::Heading(heading) => heading.as_html(),
-            Element::Line => "<hr>".to_string(),
-            Element::Paragraph(paragraph) => paragraph.as_html(),
+            Block::Heading(heading) => heading.as_html(),
+            Block::Line => "<hr>".to_string(),
+            Block::Paragraph(paragraph) => paragraph.as_html(),
         }
     }
 }
 
 impl AsHtml for document::Document {
     fn as_html(&self) -> String {
-        self.elements
+        self.blocks
             .iter()
-            .map(|element| element.as_html())
+            .map(|block| block.as_html())
             .collect::<String>()
     }
 }

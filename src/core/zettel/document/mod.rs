@@ -1,21 +1,21 @@
 
 pub mod conversions;
 
-pub mod element;
+pub mod block;
 pub mod node;
 
 
-pub type Elements = Vec<element::Element>;
+pub type Blocks = Vec<block::Block>;
 pub type Nodes = Vec<node::Node>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct Document {
-    elements: Elements,
+    blocks: Blocks,
 }
 
 impl Document {
     pub fn test() -> Self {
-        let paragraph = element::Paragraph {
+        let paragraph = block::Paragraph {
             nodes: vec![
                 node::Node::Text("Hello, ".to_string()),
                 node::Node::Styled(
@@ -26,7 +26,7 @@ impl Document {
             ],
         };
 
-        let paragraph2 = element::Paragraph {
+        let paragraph2 = block::Paragraph {
             nodes: vec![
                 node::Node::Text("Goodbye, ".to_string()),
                 node::Node::Styled(
@@ -41,13 +41,13 @@ impl Document {
         };
 
         let elements = vec![
-            element::Element::Heading(element::Heading::new(1, "Hello, world!".to_string())),
-            element::Element::Paragraph(paragraph),
-            element::Element::Line,
-            element::Element::Paragraph(paragraph2),
-            element::Element::Heading(element::Heading::new(2, "Goodbye, world!".to_string())),
+            block::Block::Heading(block::Heading::new(1, "Hello, world!".to_string())),
+            block::Block::Paragraph(paragraph),
+            block::Block::Line,
+            block::Block::Paragraph(paragraph2),
+            block::Block::Heading(block::Heading::new(2, "Goodbye, world!".to_string())),
         ];
 
-        Document { elements }
+        Document { blocks: elements }
     }
 }

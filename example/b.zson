@@ -4,7 +4,7 @@
 }
 ---
 {
-    "elements": [
+    "blocks": [
         {
             "Heading": {
                 "level": 1,
