@@ -23,6 +23,7 @@ pub mod callout {
 
     #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
     pub enum Kind {
+        Basic,
         Quote,
         Note,
         Warning,

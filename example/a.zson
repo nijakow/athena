@@ -25,6 +25,21 @@
         },
         {
             "Callout": {
+                "kind": "Basic",
+                "blocks": [
+                    { "Heading": { "level": 3, "text": "Jabberwocky" } },
+                    {
+                        "Paragraph": {
+                            "nodes": [
+                                { "Text": "by Lewis Carroll" }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "Callout": {
                 "kind": "Quote",
                 "blocks": [
                     {

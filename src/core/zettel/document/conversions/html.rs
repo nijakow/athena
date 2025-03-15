@@ -74,6 +74,7 @@ impl AsHtml for document::block::callout::Callout {
         use maud::html;
 
         let kind = match self.kind {
+            document::block::callout::Kind::Basic => "basic",
             document::block::callout::Kind::Quote => "quote",
             document::block::callout::Kind::Note => "note",
             document::block::callout::Kind::Warning => "warning",
@@ -84,12 +85,14 @@ impl AsHtml for document::block::callout::Callout {
         // Use a different background color hue for each kind of callout (use pastel colors, hardcoded as hex codes)
         let (background, border) = match self.kind {
             /*
+             * Basic:   Grey-ish
              * Quote:   Grey-ish
              * Note:    Blue-ish
              * Info:    Green-ish
              * Warning: Yellow-ish
              * Error:   Red-ish
              */
+            document::block::callout::Kind::Basic => ("#f0f0f0", "#000000"),
             document::block::callout::Kind::Quote => ("#f0f0f0", "#d0d0d0"),
             document::block::callout::Kind::Note => ("#f0f8ff", "#add8e6"),
             document::block::callout::Kind::Info => ("#f0fff0", "#90ee90"),
@@ -106,8 +109,14 @@ impl AsHtml for document::block::callout::Callout {
         // The way we turn this into HTML is by using a <div> element, setting the background color
         // explicitly, adding a border and a margin, and then rendering the blocks inside
 
+        let border_type = if let document::block::callout::Kind::Basic = self.kind {
+            "border-left"
+        } else {
+            "border"
+        };
+
         html! {
-            div style=(format!("border: 4px solid; margin: 1em 0; padding: 1em; background-color: {}; border-color: {}; border-radius: 0.5em;", background, border)) {
+            div style=(format!("{}: 4px solid; margin: 1em 0; padding: 1em; background-color: {}; border-color: {}; border-radius: 0.5em;", border_type, background, border)) {
                 (maud::PreEscaped(blocks))
             }
         }.into_string()
