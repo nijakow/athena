@@ -9,12 +9,16 @@ pub struct Id {
 }
 
 impl Id {
-    pub fn with_id<S: ToString>(id: S) -> Id {
+    pub(crate) fn with_id<S: ToString>(id: S) -> Id {
         Id { id: id.to_string() }
     }
 
     pub fn id(&self) -> &str {
         &self.id
+    }
+
+    pub fn as_safe_uri(&self) -> String {
+        format!("/zettel/{}", self.id)
     }
 }
 
@@ -29,13 +33,25 @@ impl Header {
     }
 }
 
-pub struct Body {
-    
+pub enum Body {
+    Empty,
+    Document(Box<document::Document>),
 }
 
 impl Body {
-    pub(crate) fn from_json(json: &serde_json::Value) -> Result<Body, ()> {
-        Ok(Body {})
+    pub(crate) fn dummy() -> Body {
+        Body::Document(Box::new(document::Document::test()))
+    }
+
+    pub(crate) fn from_json(_json: &serde_json::Value) -> Result<Body, ()> {
+        Err(())
+    }
+
+    pub fn as_document(&self) -> Option<&document::Document> {
+        match self {
+            Body::Document(doc) => Some(doc),
+            _ => None,
+        }
     }
 }
 
@@ -46,8 +62,12 @@ pub struct Zettel {
 }
 
 impl Zettel {
-    fn new(header: Header, body: Body) -> Zettel {
+    fn new(header: Header, body: Body) -> Self {
         Zettel { header, body }
+    }
+
+    pub fn dummy() -> Self {
+        Self::new(Header {}, Body::dummy())
     }
 
     fn from_serde_json(json: &serde_json::Value) -> Result<Zettel, ()> {
@@ -69,5 +89,17 @@ impl Zettel {
             }
             None => Err("Unknown resource type".into()),
         }
+    }
+
+    pub fn header(&self) -> &Header {
+        &self.header
+    }
+
+    pub fn body(&self) -> &Body {
+        &self.body
+    }
+
+    pub fn body_as_document(&self) -> Option<&document::Document> {
+        self.body.as_document()
     }
 }

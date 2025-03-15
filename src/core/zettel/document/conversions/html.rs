@@ -30,7 +30,7 @@ impl AsHtml for document::node::Node {
                 let target = &link.target;
                 let caption = &link.caption;
 
-                format!("<a href=\"/zettel/{}\">{}</a>", target.id(), caption)
+                format!("<a href=\"{}\">{}</a>", target.as_safe_uri(), caption)
             }
             Node::Grouped(nodes) => {
                 let html = nodes.iter().map(|node| node.as_html()).collect::<String>();

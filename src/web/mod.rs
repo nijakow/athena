@@ -2,7 +2,7 @@ use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use maud::{html, DOCTYPE};
 use std::sync::Arc;
 
-use crate::core::{vault, zettel};
+use crate::core::{vault, zettel::{self, document::conversions::html::AsHtml}};
 
 
 async fn list_zettels(vault: web::Data<Arc<vault::Vault>>) -> impl Responder {
@@ -21,7 +21,7 @@ async fn list_zettels(vault: web::Data<Arc<vault::Vault>>) -> impl Responder {
                 ul {
                     @for (id, title) in zettels {
                         li {
-                            a href=(format!("/zettel/{}", id.id())) { (title) }
+                            a href=(format!("{}", id.as_safe_uri())) { (title) }
                         }
                     }
                 }
@@ -37,17 +37,13 @@ async fn show_zettel(
     id: web::Path<String>,
 ) -> impl Responder {
     let id = zettel::Id::with_id(id.into_inner());
-    let zettel = Some(());
+    let zettel = vault.load(&id);
 
     match zettel {
         Some(zettel) => {
             let title = "Zettel";
 
-            let content = {
-                use crate::core::zettel::document::conversions::html::AsHtml;
-        
-                crate::core::zettel::document::Document::test().as_html()
-            };
+            let content = zettel.body_as_document().unwrap().as_html();
 
             let html = html! {
                 (DOCTYPE)
@@ -64,7 +60,22 @@ async fn show_zettel(
 
             HttpResponse::Ok().body(html.into_string())
         }
-        None => HttpResponse::NotFound().finish(),
+        None => {
+            let html = html! {
+                (DOCTYPE)
+                html {
+                    head {
+                        title { "Zettel" }
+                    }
+                    body {
+                        h1 { "Zettel " i { (id.id()) } " not found" }
+                        p { "Not found" }
+                    }
+                }
+            };
+
+            HttpResponse::NotFound().body(html.into_string())
+        }
     }
 }
 
