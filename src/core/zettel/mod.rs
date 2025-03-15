@@ -24,12 +24,18 @@ impl Id {
 
 
 pub struct Header {
-    
+    pub title: Option<String>,
 }
 
 impl Header {
+    fn new(title: Option<String>) -> Self {
+        Header { title }
+    }
+
     pub(crate) fn from_json(json: &serde_json::Value) -> Result<Header, ()> {
-        Ok(Header {})
+        let title = json.get("title").and_then(|v| v.as_str()).map(|s| s.to_string());
+
+        Ok(Header::new(title))
     }
 }
 
@@ -57,17 +63,13 @@ impl Body {
 
 
 pub struct Zettel {
-    header: Header,
-    body: Body,
+    pub header: Header,
+    pub body: Body,
 }
 
 impl Zettel {
     fn new(header: Header, body: Body) -> Self {
         Zettel { header, body }
-    }
-
-    pub fn dummy() -> Self {
-        Self::new(Header {}, Body::dummy())
     }
 
     fn from_split_json(split_json: &SplitJson) -> Result<Zettel, ()> {
