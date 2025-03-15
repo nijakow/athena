@@ -57,6 +57,17 @@ impl AsHtml for document::block::Heading {
     }
 }
 
+impl AsHtml for document::block::CodeBlock {
+    fn as_html(&self) -> String {
+        use maud::html;
+
+        let code = &self.code;
+
+        // Turn a code block into a <pre> element with a <code> element inside
+        html! { pre { code { (code) } } }.into_string()
+    }
+}
+
 impl AsHtml for document::block::Paragraph {
     fn as_html(&self) -> String {
         use maud::html;
@@ -78,6 +89,7 @@ impl AsHtml for document::block::Block {
         match self {
             Block::Heading(heading) => heading.as_html(),
             Block::Line => "<hr>".to_string(),
+            Block::CodeBlock(codeblock) => codeblock.as_html(),
             Block::Paragraph(paragraph) => paragraph.as_html(),
         }
     }

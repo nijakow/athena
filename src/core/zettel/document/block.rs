@@ -12,6 +12,12 @@ impl Heading {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+pub struct CodeBlock {
+    pub language: Option<String>,
+    pub code: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct Paragraph {
     pub nodes: super::Nodes,
 }
@@ -20,5 +26,6 @@ pub struct Paragraph {
 pub enum Block {
     Heading(Heading),
     Line,
+    CodeBlock(CodeBlock),
     Paragraph(Paragraph),
 }
