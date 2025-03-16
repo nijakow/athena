@@ -18,9 +18,16 @@ impl AsHtml for document::node::Node {
         use document::node::Node;
         use maud::html;
 
+        fn escape<S: ToString>(text: S) -> String {
+            html_escape::encode_safe(&text.to_string()).into_owned()
+        }
+
         match self {
             Node::Newline => "<br/>".to_string(),
-            Node::Text(text) => html! { (text) }.into_string(),
+            Node::Text(text) => {
+                let text = escape(text);
+                html! { (text) }.into_string()
+            }
             Node::Tag(tag) => {
                 let link = format!("/tags/{}", tag);
                 html! { a href=(link) { code { (format!("#{}", tag)) } } }.into_string()

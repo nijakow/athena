@@ -15,6 +15,7 @@ async fn list_zettels(vault: web::Data<Arc<vault::Vault>>) -> impl Responder {
 
     let html = html! {
         (DOCTYPE)
+        meta charset="utf-8";
         html {
             head {
                 title { "Zettel" }
@@ -50,6 +51,7 @@ fn generate_show_zettel(
 
             let html = html! {
                 (DOCTYPE)
+                meta charset="utf-8";
                 html {
                     head {
                         title { (title) }
@@ -68,6 +70,7 @@ fn generate_show_zettel(
         None => {
             let html = html! {
                 (DOCTYPE)
+                meta charset="utf-8";
                 html {
                     head {
                         title { "Zettel" }
