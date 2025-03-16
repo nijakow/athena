@@ -1,6 +1,7 @@
 
 pub mod config;
 pub mod io;
+pub mod semantic;
 pub mod vault;
 pub mod zettel;
 
