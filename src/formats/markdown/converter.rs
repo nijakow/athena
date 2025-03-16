@@ -177,6 +177,14 @@ pub enum ParseError {
     Unknown,
 }
 
+impl std::fmt::Display for ParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Unknown parse error")
+    }
+}
+
+impl std::error::Error for ParseError {}
+
 pub fn parse_document<S: ToString>(input: S, context: ParseContext) -> Result<our::Document, ParseError> {
     let mut context = context;
 

@@ -63,6 +63,10 @@ impl Body {
         Ok(Body::Document(Box::new(document::conversions::json::json_to_document(&json)?)))
     }
 
+    pub(crate) fn from_obsidian_markdown(markdown: &crate::formats::markdown::Document) -> Result<Body, ()> {
+        Ok(Body::Document(Box::new(document::conversions::markdown::markdown_to_document(&markdown)?)))
+    }
+
     pub fn as_document(&self) -> Option<&document::Document> {
         match self {
             Body::Document(doc) => Some(doc),
@@ -89,6 +93,13 @@ impl Zettel {
         Ok(Zettel::new(header, body))
     }
 
+    fn from_obsidian_markdown(markdown: &crate::formats::markdown::Document) -> Result<Zettel, ()> {
+        let body = Body::from_obsidian_markdown(markdown)?;
+        let header = Header::new(None); // TODO!
+
+        Ok(Zettel::new(header, body))
+    }
+
     pub fn from_resource(resource: resource::Resource) -> Result<Self, Box<dyn std::error::Error>> {
         let metadata = resource.metadata();
 
@@ -96,6 +107,12 @@ impl Zettel {
             Some(resource::Type::Athena) => {
                 let split_json = resource.read_to_split_json()?;
                 let zettel = Zettel::from_split_json(&split_json).map_err(|_| "Failed to parse Zettel")?;
+
+                Ok(zettel)
+            }
+            Some(resource::Type::Obsidian) => {
+                let markdown = resource.read_to_obsidian_markdown()?;
+                let zettel = Zettel::from_obsidian_markdown(&markdown).map_err(|_| "Failed to parse Zettel")?;
 
                 Ok(zettel)
             }

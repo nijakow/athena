@@ -1,23 +1,21 @@
-
-
 pub enum Type {
     Athena,
+    Obsidian,
 }
 
 impl Type {
     pub fn from_extension(extension: &str) -> Option<Type> {
         match extension {
             "zson" => Some(Type::Athena),
-            _      => None,
+            "md" => Some(Type::Obsidian),
+            _ => None,
         }
     }
 }
 
-
 pub struct Metadata {
     pub resource_type: Option<Type>,
 }
-
 
 pub struct SplitJson {
     pub header: serde_json::Value,
@@ -33,8 +31,12 @@ impl SplitJson {
         let content = content.to_string();
 
         // Find the position of the first `---`
-        let first_delimiter = content.find("---").ok_or("Failed to find first delimiter")?;
-        let second_delimiter = content[first_delimiter + 3..].find("---").ok_or("Failed to find second delimiter")?;
+        let first_delimiter = content
+            .find("---")
+            .ok_or("Failed to find first delimiter")?;
+        let second_delimiter = content[first_delimiter + 3..]
+            .find("---")
+            .ok_or("Failed to find second delimiter")?;
 
         // Get the header and body JSON objects
         let header = &content[first_delimiter + 3..first_delimiter + 3 + second_delimiter];
@@ -47,7 +49,6 @@ impl SplitJson {
         Ok(SplitJson { header, body })
     }
 }
-
 
 pub struct Resource {
     path: std::path::PathBuf,
@@ -79,5 +80,20 @@ impl Resource {
 
         // Parse the content into a SplitJson object
         SplitJson::parse(content)
+    }
+
+    pub fn read_to_obsidian_markdown(
+        &self,
+    ) -> Result<crate::formats::markdown::Document, Box<dyn std::error::Error>> {
+        use crate::formats::markdown::model::parser;
+
+        let content = std::fs::read_to_string(&self.path)?;
+
+        let mut tags = crate::core::semantic::tag::Tags::new();
+
+        let parse_context = parser::ParseContext::new(&mut tags);
+
+        parser::parse_document(content, parse_context)
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
     }
 }
