@@ -2,11 +2,11 @@
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct Heading {
     pub level: u8,
-    pub text: String,
+    pub text: super::Nodes,
 }
 
 impl Heading {
-    pub fn new(level: u8, text: String) -> Heading {
+    pub fn new(level: u8, text: super::Nodes) -> Heading {
         Heading { level, text }
     }
 }
@@ -29,6 +29,19 @@ pub mod callout {
         Warning,
         Info,
         Error,
+    }
+
+    impl From<&str> for Kind {
+        fn from(s: &str) -> Kind {
+            match s {
+                "quote"   => Kind::Quote,
+                "note"    => Kind::Note,
+                "warning" => Kind::Warning,
+                "info"    => Kind::Info,
+                "error"   => Kind::Error,
+                _         => Kind::Basic,
+            }
+        }
     }
 
     #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]

@@ -44,15 +44,13 @@ impl AsHtml for document::node::Node {
 
 impl AsHtml for document::block::Heading {
     fn as_html(&self) -> String {
-        use maud::html;
-
         let tag_name = format!("h{}", self.level);
-        let text = &self.text;
+        let text = self.text.iter().map(|node| node.as_html()).collect::<String>();
 
         format!(
             "<{}>{}</{}>",
             tag_name,
-            html! { (text) }.into_string(),
+            text,
             tag_name
         )
     }

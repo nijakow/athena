@@ -41,13 +41,17 @@ impl Document {
         };
 
         let elements = vec![
-            block::Block::Heading(block::Heading::new(1, "Hello, world!".to_string())),
+            block::Block::Heading(block::Heading::new(1, vec![node::Node::Text("Hello, world!".to_string())])),
             block::Block::Paragraph(paragraph),
             block::Block::Line,
             block::Block::Paragraph(paragraph2),
-            block::Block::Heading(block::Heading::new(2, "Goodbye, world!".to_string())),
+            block::Block::Heading(block::Heading::new(2, vec![node::Node::Text("Goodbye, world!".to_string())])),
         ];
 
         Document { blocks: elements }
+    }
+
+    pub fn with_blocks(blocks: Blocks) -> Self {
+        Document { blocks }
     }
 }
