@@ -4,7 +4,16 @@ use crate::formats::markdown;
 pub type ConversionError = ();
 
 fn convert_span(span: &markdown::model::Span) -> Result<document::node::Node, ()> {
-    todo!()
+    match span {
+        markdown::model::Span::Break => Ok(document::node::Node::Newline),
+        markdown::model::Span::Text(text) => Ok(document::node::Node::Text(text.clone())),
+        markdown::model::Span::Code(code) => Ok(document::node::Node::Text(code.clone())),
+        markdown::model::Span::Link(_, _, _) => todo!(),
+        markdown::model::Span::Image(_, _, _) => todo!(),
+        markdown::model::Span::Emphasis(spans) => Ok(document::node::Node::Styled(document::node::Style::Italic, Box::new(document::node::Node::Grouped(convert_spans(spans)?)))),
+        markdown::model::Span::Strong(spans) => Ok(document::node::Node::Styled(document::node::Style::Bold, Box::new(document::node::Node::Grouped(convert_spans(spans)?)))),
+        _ => Ok(document::node::Node::Text("Whoopsie!".to_string())),
+    }
 }
 
 fn convert_spans(spans: &markdown::model::Spans) -> Result<document::Nodes, ()> {
