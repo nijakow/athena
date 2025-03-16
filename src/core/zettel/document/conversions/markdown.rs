@@ -3,96 +3,70 @@ use crate::formats::markdown;
 
 pub type ConversionError = ();
 
-fn convert_span(span: &markdown::model::Span) -> Result<document::node::Node, ()> {
-    match span {
-        markdown::model::Span::Break => Ok(document::node::Node::Newline),
-        markdown::model::Span::Text(text) => Ok(document::node::Node::Text(text.clone())),
-        markdown::model::Span::Code(code) => Ok(document::node::Node::Text(code.clone())),
-        markdown::model::Span::Link(_, _, _) => todo!(),
-        markdown::model::Span::Image(_, _, _) => todo!(),
-        markdown::model::Span::Emphasis(spans) => Ok(document::node::Node::Styled(document::node::Style::Italic, Box::new(document::node::Node::Grouped(convert_spans(spans)?)))),
-        markdown::model::Span::Strong(spans) => Ok(document::node::Node::Styled(document::node::Style::Bold, Box::new(document::node::Node::Grouped(convert_spans(spans)?)))),
-        _ => Ok(document::node::Node::Text("Whoopsie!".to_string())),
+fn convert_node(node: &markdown::Node) -> Result<document::node::Node, ConversionError> {
+
+    fn styled(nodes: &markdown::Nodes, style: document::node::Style) -> Result<document::node::Node, ConversionError> {
+        Ok(document::node::Node::Styled(style, Box::new(document::node::Node::Grouped(convert_nodes(nodes)?))))
+    }
+
+    match node {
+        markdown::Node::Newline => Ok(document::node::Node::Newline),
+        markdown::Node::Text(text) => Ok(document::node::Node::Text(text.clone())),
+        markdown::Node::Bold(nodes) => styled(nodes, document::node::Style::Bold),
+        markdown::Node::Italic(nodes) => styled(nodes, document::node::Style::Italic),
+        _ => Ok(document::node::Node::Text("TODO".to_string())),
     }
 }
 
-fn convert_spans(spans: &markdown::model::Spans) -> Result<document::Nodes, ()> {
-    spans.iter().map(convert_span).collect()
+fn convert_nodes(nodes: &markdown::Nodes) -> Result<document::Nodes, ConversionError> {
+    nodes.iter().map(convert_node).collect()
 }
 
-fn convert_header(
-    spans: &markdown::model::Spans,
-    index: usize,
-) -> Result<document::block::Block, ()> {
-    Ok(document::block::Block::Heading(
-        document::block::Heading::new(index as u8, convert_spans(spans)?),
+fn convert_heading(
+    heading: &markdown::Heading,
+) -> Result<document::block::Heading, ConversionError> {
+    Ok(document::block::Heading::new(
+        heading.0,
+        convert_nodes(&heading.1)?,
     ))
 }
 
-fn convert_paragraph(spans: &markdown::model::Spans) -> Result<document::block::Block, ()> {
-    Ok(document::block::Block::Paragraph(
-        document::block::Paragraph {
-            nodes: convert_spans(spans)?,
-        },
-    ))
+fn convert_code(
+    language: &Option<String>,
+    code: &String,
+) -> Result<document::block::CodeBlock, ConversionError> {
+    Ok(document::block::CodeBlock {
+        language: language.clone(),
+        code: code.clone(),
+    })
 }
 
-fn convert_blockquote(
-    kind: &Option<String>,
-    nodes: &markdown::model::Nodes,
-) -> Result<document::block::Block, ()> {
-    Ok(document::block::Block::Callout(
-        document::block::callout::Callout {
-            kind: match kind {
-                Some(kind) => kind.as_str().into(),
-                None => document::block::callout::Kind::Basic,
+fn convert_block(block: &markdown::Block) -> Result<document::block::Block, ConversionError> {
+    match block {
+        markdown::Block::ThematicBreak => Ok(document::block::Block::Line),
+        markdown::Block::Heading(heading) => {
+            convert_heading(heading).map(document::block::Block::Heading)
+        }
+        markdown::Block::Code(lang, code) => {
+            convert_code(lang, code).map(document::block::Block::CodeBlock)
+        }
+        markdown::Block::Nodes(nodes) => Ok(document::block::Block::Paragraph(
+            document::block::Paragraph {
+                nodes: convert_nodes(nodes)?,
             },
-            blocks: convert_toplevels(nodes)?,
-        },
-    ))
-}
-
-fn convert_codeblock(language: &Option<String>, text: &str) -> Result<document::block::Block, ()> {
-    Ok(document::block::Block::CodeBlock(
-        document::block::CodeBlock {
-            language: language.clone(),
-            code: text.to_string(),
-        },
-    ))
-}
-
-fn convert_raw(text: &str) -> Result<document::block::Block, ()> {
-    Ok(document::block::Block::Paragraph(
-        document::block::Paragraph {
-            nodes: vec![document::node::Node::Text(text.to_string())],
-        },
-    ))
-}
-
-fn convert_hr() -> Result<document::block::Block, ()> {
-    Ok(document::block::Block::Line)
-}
-
-fn convert_toplevel(toplevel: &markdown::model::Node) -> Result<document::block::Block, ()> {
-    match toplevel {
-        markdown::model::Node::Header(spans, index) => convert_header(spans, *index),
-        markdown::model::Node::Paragraph(spans) => convert_paragraph(spans),
-        markdown::model::Node::Blockquote(language, spans) => convert_blockquote(language, spans),
-        markdown::model::Node::CodeBlock(language, text) => convert_codeblock(language, text),
-        markdown::model::Node::Raw(text) => convert_raw(text),
-        markdown::model::Node::Hr => convert_hr(),
-        _ => Err(()),
+        )),
+        _ => todo!(),
     }
 }
 
-fn convert_toplevels(toplevels: &markdown::model::Nodes) -> Result<document::Blocks, ()> {
-    toplevels.iter().map(convert_toplevel).collect()
+fn convert_blocks(blocks: &markdown::Blocks) -> Result<document::Blocks, ConversionError> {
+    blocks.iter().map(convert_block).collect()
 }
 
 pub fn markdown_to_document(
     markdown: &markdown::Document,
 ) -> Result<document::Document, ConversionError> {
-    Ok(document::Document::with_blocks(convert_toplevels(
-        &markdown.toplevels,
+    Ok(document::Document::with_blocks(convert_blocks(
+        &markdown.blocks,
     )?))
 }

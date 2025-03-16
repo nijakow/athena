@@ -7,8 +7,8 @@ impl Type {
     pub fn from_extension(extension: &str) -> Option<Type> {
         match extension {
             "zson" => Some(Type::Athena),
-            "md"   => Some(Type::Obsidian),
-            _      => None,
+            "md" => Some(Type::Obsidian),
+            _ => None,
         }
     }
 }
@@ -85,15 +85,9 @@ impl Resource {
     pub fn read_to_obsidian_markdown(
         &self,
     ) -> Result<crate::formats::markdown::Document, Box<dyn std::error::Error>> {
-        use crate::formats::markdown::model::parser;
-
         let content = std::fs::read_to_string(&self.path)?;
 
-        let mut tags = crate::core::semantic::tag::Tags::new();
-
-        let parse_context = parser::ParseContext::new(&mut tags);
-
-        parser::parse_document(content, parse_context)
+        crate::formats::markdown::parser::parse_document(content)
             .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
     }
 }

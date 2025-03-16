@@ -1,121 +1,104 @@
-mod converter;
 
-pub use model::Document;
+use url;
 
-pub mod model {
-    use crate::core::semantic::tag;
+pub mod parser;
 
-    pub type Spans = Vec<Span>;
-    pub type Nodes = Vec<Node>;
-    pub type ListItems = Vec<ListItem>;
+#[derive(Debug)]
+pub enum LinkKind {
+    Internal,
+    External,
+}
 
-    pub type Tag = tag::TagHandle;
 
-    #[derive(Debug, Clone)]
-    pub struct JournalEntryHeader {
-        pub timestamp: String,
-        pub title: Option<String>,
-        pub tags: Vec<Tag>,
-    }
+#[derive(Debug)]
+pub enum LinkTarget {
+    Zettel(String),
+    Url(url::Url),
+    FreeForm(String),
+}
 
-    #[derive(Debug, PartialEq, Clone)]
-    pub struct Wikilink {
-        pub target: String,
-        pub label: Option<String>,
-        pub embedded: bool,
-    }
-
-    #[derive(Debug, Clone)]
-    pub enum Span {
-        Break,
-        Text(String),
-        Code(String),
-        Link(String, String, Option<String>),
-        Image(String, String, Option<String>),
-
-        Emphasis(Spans),
-        Strong(Spans),
-
-        Tag(Tag),
-        Wikilink(Wikilink),
-        Label(String),
-
-        Unknown,
-    }
-
-    #[derive(Debug, Clone)]
-    pub enum OrderedListType {
-        Undefined,
-    }
-
-    #[derive(Debug, Clone)]
-    pub enum ListItem {
-        Simple(Spans),
-        Paragraph(Nodes),
-    }
-
-    #[derive(Debug, Clone)]
-    pub enum Node {
-        Header(Spans, usize),
-        Paragraph(Spans),
-        Blockquote(Option<String>, Nodes),
-        CodeBlock(Option<String>, String),
-        OrderedList(ListItems, OrderedListType),
-        UnorderedList(ListItems),
-        Raw(String),
-        Hr,
-
-        Unknown,
-    }
-
-    #[derive(Debug, Clone)]
-    pub struct Document {
-        pub properties: Option<yaml_rust::Yaml>,
-        pub toplevels: Nodes,
-    }
-
-    impl Document {
-        pub fn get_property(&self, key: &str) -> Option<&yaml_rust::Yaml> {
-            self.properties
-                .as_ref()
-                .and_then(|p| p.as_hash()?.get(&yaml_rust::Yaml::String(key.to_string())))
+impl LinkTarget {
+    pub fn guess<S: ToString>(target: S) -> LinkTarget {
+        let target = target.to_string();
+        
+        if let Ok(url) = url::Url::parse(&target) {
+            LinkTarget::Url(url)
+        } else {
+            LinkTarget::FreeForm(target)
         }
+    }
+}
 
-        pub fn get_property_string(&self, key: &str) -> Option<String> {
-            match self.get_property(key) {
-                Some(yaml_rust::Yaml::String(s)) => Some(s.clone()),
-                _ => None,
-            }
-        }
 
-        pub fn get_property_list(&self, key: &str) -> Option<&Vec<yaml_rust::Yaml>> {
-            self.get_property(key).and_then(|p| p.as_vec())
-        }
+#[derive(Debug)]
+pub struct Link {
+    pub kind: LinkKind,
+    pub target: LinkTarget,
+    pub title: Option<Nodes>,
+}
 
-        pub fn get_property_list_of_strings(&self, key: &str) -> Option<Vec<String>> {
-            self.get_property_list(key).map(|v| {
-                v.iter()
-                    .filter_map(|item| match item {
-                        yaml_rust::Yaml::String(s) => Some(s.clone()),
-                        _ => None,
-                    })
-                    .collect()
-            })
+impl Link {
+    pub fn with_target(kind: LinkKind, target: LinkTarget) -> Link {
+        Link {
+            kind,
+            target,
+            title: None,
         }
     }
 
-    pub mod parser {
-        use super::super::converter;
-
-        pub type ParseError = converter::ParseError;
-
-        pub type ParseContext<'a> = converter::ParseContext<'a>;
-
-        pub fn parse_document<S: ToString>(
-            input: S,
-            context: ParseContext,
-        ) -> Result<super::Document, ParseError> {
-            converter::parse_document(input, context)
+    pub fn with_title(kind: LinkKind, target: LinkTarget, title: Nodes) -> Link {
+        Link {
+            kind,
+            target,
+            title: Some(title),
         }
     }
+}
+
+#[derive(Debug)]
+pub enum Node {
+    Newline,
+    Text(String),
+    Bold(Nodes),
+    Italic(Nodes),
+    Link {
+        embed: bool,
+        link: Link,
+    },
+    Code(String),
+    Tag(String),
+}
+
+pub type Nodes = Vec<Node>;
+
+#[derive(Debug)]
+pub struct Heading(pub u8, pub Nodes);
+
+#[derive(Debug, Clone)]
+pub enum TaskStatus {
+    Completed,
+    Pending,
+}
+
+#[derive(Debug)]
+pub struct BulletPoint(pub Option<TaskStatus>, pub Nodes);
+
+#[derive(Debug)]
+pub enum Block {
+    ThematicBreak,
+    Heading(Heading),
+    BulletPoint(BulletPoint),
+    Code(Option<String>, String),
+    Nodes(Nodes),
+}
+
+pub type Blocks = Vec<Block>;
+
+/*
+ * A markdown document.
+ */
+
+#[derive(Debug)]
+pub struct Document {
+    pub blocks: Blocks,
 }
