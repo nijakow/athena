@@ -12,8 +12,10 @@ fn convert_node(node: &markdown::Node) -> Result<document::node::Node, Conversio
     match node {
         markdown::Node::Newline => Ok(document::node::Node::Newline),
         markdown::Node::Text(text) => Ok(document::node::Node::Text(text.clone())),
+        markdown::Node::Code(code) => Ok(document::node::Node::Code(code.clone())),
         markdown::Node::Bold(nodes) => styled(nodes, document::node::Style::Bold),
         markdown::Node::Italic(nodes) => styled(nodes, document::node::Style::Italic),
+        markdown::Node::Tag(tag) => Ok(document::node::Node::Tag(tag.clone())),
         _ => Ok(document::node::Node::Text("TODO".to_string())),
     }
 }

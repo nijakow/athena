@@ -21,6 +21,13 @@ impl AsHtml for document::node::Node {
         match self {
             Node::Newline => "<br/>".to_string(),
             Node::Text(text) => html! { (text) }.into_string(),
+            Node::Tag(tag) => {
+                let link = format!("/tags/{}", tag);
+                html! { a href=(link) { code { (format!("#{}", tag)) } } }.into_string()
+            }
+            Node::Code(code) => {
+                html! { code { (code) } }.into_string()
+            }
             Node::Styled(style, node) => {
                 let tag_name = convert_style(style);
                 let html = node.as_html();

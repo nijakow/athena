@@ -20,6 +20,8 @@ pub struct Reference {
 pub enum Node {
     Newline,
     Text(String),
+    Tag(String),
+    Code(String),
     Styled(Style, Box<Node>),
     Reference(Reference),
     Grouped(Nodes),
