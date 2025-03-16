@@ -7,8 +7,8 @@ impl Type {
     pub fn from_extension(extension: &str) -> Option<Type> {
         match extension {
             "zson" => Some(Type::Athena),
-            "md" => Some(Type::Obsidian),
-            _ => None,
+            "md"   => Some(Type::Obsidian),
+            _      => None,
         }
     }
 }

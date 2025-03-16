@@ -8,7 +8,11 @@
         {
             "Heading": {
                 "level": 1,
-                "text": "Introduction"
+                "nodes": [
+                    {
+                        "Text": "Introduction"
+                    }
+                ]
             }
         },
         {
@@ -35,7 +39,11 @@
         {
             "Heading": {
                 "level": 2,
-                "text": "Chapter 1"
+                "nodes": [
+                    {
+                        "Text": "Chapter 1"
+                    }
+                ]
             }
         },
         {
@@ -55,6 +63,22 @@
                             "target": "a",
                             "caption": "Have a look at this."
                         }
+                    },
+                    {
+                        "Text": " It's a good read."
+                    },
+                    "Newline",
+                    {
+                        "Text": "Or have a look at "
+                    },
+                    {
+                        "Reference": {
+                            "target": "c",
+                            "caption": "this"
+                        }
+                    },
+                    {
+                        "Text": "."
                     }
                 ]
             }

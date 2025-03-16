@@ -45,7 +45,7 @@ impl AsHtml for document::node::Node {
 impl AsHtml for document::block::Heading {
     fn as_html(&self) -> String {
         let tag_name = format!("h{}", self.level);
-        let text = self.text.iter().map(|node| node.as_html()).collect::<String>();
+        let text = self.nodes.iter().map(|node| node.as_html()).collect::<String>();
 
         format!(
             "<{}>{}</{}>",

@@ -2,12 +2,12 @@
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct Heading {
     pub level: u8,
-    pub text: super::Nodes,
+    pub nodes: super::Nodes,
 }
 
 impl Heading {
     pub fn new(level: u8, text: super::Nodes) -> Heading {
-        Heading { level, text }
+        Heading { level, nodes: text }
     }
 }
 

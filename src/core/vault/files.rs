@@ -27,7 +27,23 @@ impl Files {
         self.base.join(name.to_string())
     }
 
+    fn file_if_exists<S: ToString>(&self, name: S) -> Option<std::path::PathBuf> {
+        let path = self.file(name);
+
+        if path.exists() {
+            Some(path)
+        } else {
+            None
+        }
+    }
+
     pub fn file_by_id(&self, id: &crate::core::zettel::Id) -> std::path::PathBuf {
+        // Try different formats: .zson, .md
+        
+        if let Some(path) = self.file_if_exists(format!("{}.md", id.id())) {
+            return path;
+        }
+
         self.file(format!("{}.zson", id.id()))
     }
 }
