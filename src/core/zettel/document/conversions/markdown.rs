@@ -4,9 +4,14 @@ use crate::formats::markdown;
 pub type ConversionError = ();
 
 fn convert_node(node: &markdown::Node) -> Result<document::node::Node, ConversionError> {
-
-    fn styled(nodes: &markdown::Nodes, style: document::node::Style) -> Result<document::node::Node, ConversionError> {
-        Ok(document::node::Node::Styled(style, Box::new(document::node::Node::Grouped(convert_nodes(nodes)?))))
+    fn styled(
+        nodes: &markdown::Nodes,
+        style: document::node::Style,
+    ) -> Result<document::node::Node, ConversionError> {
+        Ok(document::node::Node::Styled(
+            style,
+            Box::new(document::node::Node::Grouped(convert_nodes(nodes)?)),
+        ))
     }
 
     match node {
@@ -57,7 +62,14 @@ fn convert_block(block: &markdown::Block) -> Result<document::block::Block, Conv
                 nodes: convert_nodes(nodes)?,
             },
         )),
-        _ => todo!(),
+        markdown::Block::BulletPoint(bullet_point) => {
+            // TODO
+            Ok(document::block::Block::Paragraph(
+                document::block::Paragraph {
+                    nodes: convert_nodes(&bullet_point.1)?,
+                },
+            ))
+        }
     }
 }
 
