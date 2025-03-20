@@ -1,4 +1,4 @@
-use crate::core::zettel;
+use crate::core::entity::zettel;
 
 use super::Nodes;
 

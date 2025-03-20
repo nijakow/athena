@@ -18,7 +18,7 @@ pub struct CodeBlock {
 }
 
 pub mod callout {
-    use crate::core::zettel::document::Blocks;
+    use crate::core::entity::zettel::document::Blocks;
 
 
     #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]

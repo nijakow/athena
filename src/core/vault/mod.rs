@@ -1,4 +1,4 @@
-use super::{config, io::resource, zettel};
+use super::{config, io::resource, entity::zettel};
 
 mod files;
 

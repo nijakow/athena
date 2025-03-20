@@ -1,4 +1,4 @@
-use crate::core::zettel::document;
+use crate::core::entity::zettel::document;
 
 pub trait AsHtml {
     fn as_html(&self) -> String;

@@ -1,4 +1,4 @@
-use crate::core::zettel::document;
+use crate::core::entity::zettel::document;
 use crate::formats::markdown;
 
 pub type ConversionError = ();

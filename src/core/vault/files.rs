@@ -37,7 +37,7 @@ impl Files {
         }
     }
 
-    pub fn file_by_id(&self, id: &crate::core::zettel::Id) -> std::path::PathBuf {
+    pub fn file_by_id(&self, id: &crate::core::entity::zettel::Id) -> std::path::PathBuf {
         // Try different formats: .zson, .md
         
         if let Some(path) = self.file_if_exists(format!("{}.md", id.id())) {

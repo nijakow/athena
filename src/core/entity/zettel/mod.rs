@@ -1,4 +1,4 @@
-use super::io::resource::{self, SplitJson};
+use crate::core::io::resource::{self, SplitJson};
 
 pub mod document;
 

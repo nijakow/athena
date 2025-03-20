@@ -48,7 +48,7 @@ fn split_task_string(s: &str) -> (Option<markdown::TaskStatus>, String) {
 }
 
 
-enum PreParsed {
+pub enum PreParsed {
     Parsed(Box<markdown::Block>),
     Unparsed(Box<Vec<String>>),
 }

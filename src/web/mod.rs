@@ -2,7 +2,7 @@ use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use maud::{html, DOCTYPE};
 use std::{collections::HashMap, sync::Arc};
 
-use crate::core::{vault, zettel::{self, document::conversions::html::AsHtml}};
+use crate::core::{vault, entity::zettel::{self, document::conversions::html::AsHtml}};
 
 
 async fn list_zettels(vault: web::Data<Arc<vault::Vault>>) -> impl Responder {
