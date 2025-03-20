@@ -1,4 +1,4 @@
-use crate::core::entity;
+use crate::core::{entity, io::resource};
 
 pub mod storage;
 
@@ -39,8 +39,12 @@ impl Files {
 
     pub fn file_by_id(&self, id: &crate::core::entity::zettel::Id) -> Option<std::path::PathBuf> {
         // Try different formats: .zson, .md
+        
+        let extensions = resource::Type::all_extensions();
 
-        for ext in &["zson", "md"] {
+        // TODO: Iterate over the storages first, then the extensions
+
+        for ext in extensions {
             let name = format!("{}.{}", id.id(), ext);
             if let Some(path) = self.find_file(&name) {
                 return Some(path);
