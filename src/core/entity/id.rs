@@ -13,6 +13,13 @@ impl Sha256 {
         Self { bytes }
     }
 
+    pub(crate) fn from_string<S: ToString>(string: S) -> Self {
+        let bytes = hex::decode(string.to_string()).unwrap();
+        let mut sha256_bytes = [0; 32];
+        sha256_bytes.copy_from_slice(&bytes);
+        Sha256::new(sha256_bytes)
+    }
+
     pub(crate) fn from_sha256_digest<D: sha2::Digest>(digest: D) -> Sha256 {
         let bytes = digest.finalize();
         let mut sha256_bytes = [0; 32];
@@ -54,13 +61,15 @@ impl Id {
     pub(crate) fn from_string<S: ToString>(string: S) -> Id {
         let string = string.to_string();
 
-        if string.len() == 64 {
-            let bytes = hex::decode(string).unwrap();
-            let mut sha256_bytes = [0; 32];
-            sha256_bytes.copy_from_slice(&bytes);
-            Id::from_sha256(Sha256::new(sha256_bytes))
+        // If the string starts with "sha256-" then it's a SHA256 hash
+
+        if string.starts_with("sha256-") {
+            let sha256_string = string.trim_start_matches("sha256-");
+            let sha256 = Sha256::from_string(sha256_string);
+
+            Id::Sha256(sha256)
         } else {
-            Id::from_basic(string)
+            Id::Basic(string)
         }
     }
 
@@ -86,7 +95,7 @@ impl Id {
 
     pub fn id(&self) -> String {
         match self {
-            Id::Sha256(sha256) => sha256.as_string(),
+            Id::Sha256(sha256) => format!("sha256-{}", sha256.as_string()),
             Id::Basic(string) => string.clone(),
         }
     }
