@@ -1,7 +1,10 @@
+use crate::core::entity;
+
 #[derive(Debug, Clone, Copy)]
 pub enum Type {
     Athena,
     Obsidian,
+    PlainText,
     Pdf,
 }
 
@@ -10,6 +13,7 @@ impl Type {
         match extension {
             "zson" => Some(Type::Athena),
             "md" => Some(Type::Obsidian),
+            "txt" => Some(Type::PlainText),
             "pdf" => Some(Type::Pdf),
             _ => None,
         }
@@ -19,6 +23,7 @@ impl Type {
         Some(match self {
             Type::Athena => "zson",
             Type::Obsidian => "md",
+            Type::PlainText => "txt",
             Type::Pdf => "pdf",
         })
     }
@@ -27,6 +32,7 @@ impl Type {
         Some(match self {
             Type::Athena => "application/json",
             Type::Obsidian => "text/markdown",
+            Type::PlainText => "text/plain",
             Type::Pdf => "application/pdf",
         })
     }
@@ -101,8 +107,19 @@ impl Resource {
         std::fs::File::open(&self.path).map(|f| Box::new(f) as Box<dyn std::io::Read>)
     }
 
+    pub fn read_to_bytes(&self) -> Result<Vec<u8>, std::io::Error> {
+        std::fs::read(&self.path)
+    }
+
     pub fn read_to_string(&self) -> Result<String, std::io::Error> {
         std::fs::read_to_string(&self.path)
+    }
+
+    pub fn read_to_file(&self) -> Result<entity::file::File, std::io::Error> {
+        let content = self.read_to_bytes()?;
+        let file_type = self.metadata().resource_type.unwrap_or(Type::PlainText);
+
+        Ok(entity::file::File::new(file_type, content))
     }
 
     pub fn read_to_split_json(&self) -> Result<SplitJson, Box<dyn std::error::Error>> {

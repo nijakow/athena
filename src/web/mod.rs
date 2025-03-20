@@ -47,7 +47,11 @@ async fn list_entities(vault: web::Data<Arc<vault::Vault>>) -> impl Responder {
     HttpResponse::Ok().body(html.into_string())
 }
 
-fn generate_show_zettel(_vault: &Arc<vault::Vault>, id: entity::Id, zettel: zettel::Zettel) -> HttpResponse {
+fn generate_show_zettel(
+    _vault: &Arc<vault::Vault>,
+    id: entity::Id,
+    zettel: zettel::Zettel,
+) -> HttpResponse {
     let title = "Zettel";
 
     let content = zettel.body_as_document().unwrap().as_html();
@@ -71,7 +75,10 @@ fn generate_show_zettel(_vault: &Arc<vault::Vault>, id: entity::Id, zettel: zett
     HttpResponse::Ok().body(html.into_string())
 }
 
-fn generate_http_error_response(code: actix_web::http::StatusCode, message: Option<String>) -> HttpResponse {
+fn generate_http_error_response(
+    code: actix_web::http::StatusCode,
+    message: Option<String>,
+) -> HttpResponse {
     let headline = match code {
         actix_web::http::StatusCode::NOT_FOUND => "Not found",
         _ => "Error",
@@ -81,7 +88,7 @@ fn generate_http_error_response(code: actix_web::http::StatusCode, message: Opti
         Some(message) => format!("{}: {}", code, message),
         None => format!("{}", code),
     };
-    
+
     let html = html! {
         (DOCTYPE)
         meta charset="utf-8";
@@ -104,20 +111,10 @@ fn generate_404() -> HttpResponse {
 }
 
 fn generate_download_file(file: entity::file::File) -> HttpResponse {
-    let mime = file.mime_type();
-    let content = file.content();
+    let mime = file.mime_type().to_string();
+    let content = file.extract_content();
 
-
-    match content {
-        Ok(content) => {
-            HttpResponse::Ok()
-                .content_type(mime)
-                .body(content)
-        }
-        Err(_) => {
-            generate_http_error_response(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, Some("Could not read file".to_string()))
-        }
-    }
+    HttpResponse::Ok().content_type(mime).body(content)
 }
 
 fn generate_show_entity(vault: &Arc<vault::Vault>, id: entity::Id) -> HttpResponse {

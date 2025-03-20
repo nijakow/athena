@@ -31,6 +31,9 @@ impl Entity {
 
                 Ok(Entity::Zettel(zettel))
             }
+            Some(resource::Type::PlainText) => {
+                Ok(Entity::File(resource.read_to_file()?))
+            }
             Some(resource::Type::Pdf) => Err("PDF not supported".into()),
             None => Err("Unknown resource type".into()),
         }

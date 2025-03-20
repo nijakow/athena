@@ -2,12 +2,12 @@ use crate::core::io::resource::Type;
 
 pub struct File {
     file_type: Type,
-    path: std::path::PathBuf,
+    content: Vec<u8>,
 }
 
 impl File {
-    pub fn new(file_type: Type, path: std::path::PathBuf) -> Self {
-        Self { file_type, path }
+    pub fn new(file_type: Type, content: Vec<u8>) -> Self {
+        Self { file_type, content }
     }
 
     pub fn mime_type(&self) -> &str {
@@ -16,7 +16,11 @@ impl File {
             .unwrap_or("application/octet-stream")
     }
 
-    pub fn content(&self) -> Result<Vec<u8>, std::io::Error> {
-        std::fs::read(&self.path)
+    pub fn content(&self) -> &[u8] {
+        &self.content
+    }
+
+    pub fn extract_content(self) -> Vec<u8> {
+        self.content
     }
 }
