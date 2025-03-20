@@ -10,6 +10,8 @@ Das ist *Burgunder* und das ist **Bordeaux**!
 
 Und das ist ***Salami***! Mit einem #tag und etwas Code: `(cons 1 2)`
 
+> This is just a normal callout.
+
 > [!quote]
 > # Jabberwocky
 > Twas brillig, and the *slithy* toves
@@ -27,6 +29,25 @@ Und das ist ***Salami***! Mit einem #tag und etwas Code: `(cons 1 2)`
 > [!info]
 > This is some info!
 
+> [!warning]
+> 🚨 This is a warning!!!
+
+> [!error]
+> 🚨 **This is an error!!!**
+>
+> ```c
+> struct by_lightning;
+> ```
+
+> [!quote]
+> # Echo
+> ## Echo
+> ### Echo
+> #### Echo
+> ##### Echo
+> ###### Echo
+> Echo
+
 ```c
 #include <stdio.h>
 
@@ -36,3 +57,7 @@ int main(int argc, char* argv[])
     return 0;
 }
 ```
+
+ - Foo
+ - Bar
+ - Baz
