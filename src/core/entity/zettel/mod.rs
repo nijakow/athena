@@ -1,8 +1,6 @@
-use crate::core::io::resource::{self, SplitJson};
+use crate::core::io::resource::SplitJson;
 
 pub mod document;
-
-pub type Id = crate::core::entity::id::Id;
 
 
 pub struct Header {

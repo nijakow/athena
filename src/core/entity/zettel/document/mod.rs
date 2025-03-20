@@ -32,7 +32,7 @@ impl Document {
                 node::Node::Styled(
                     node::Style::Italic,
                     Box::new(node::Node::Reference(node::Reference {
-                        target: crate::core::entity::zettel::Id::with_id("b"),
+                        target: crate::core::entity::Id::with_id("b"),
                         caption: "world".to_string(),
                     })),
                 ),

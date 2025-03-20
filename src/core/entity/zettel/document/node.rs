@@ -1,4 +1,4 @@
-use crate::core::entity::zettel;
+use crate::core::entity;
 
 use super::Nodes;
 
@@ -12,7 +12,7 @@ pub enum Style {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct Reference {
-    pub target: zettel::Id,
+    pub target: entity::Id,
     pub caption: String,
 }
 
