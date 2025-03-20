@@ -62,5 +62,6 @@ impl Vault {
         self.load_zettel_header(id)
             .map(|header| header.title)
             .flatten()
+            .or_else(|| Some(id.id().to_string()))
     }
 }
