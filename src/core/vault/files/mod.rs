@@ -11,13 +11,6 @@ impl Files {
         Files { storages }
     }
 
-    pub fn list_files(&self) -> Vec<std::path::PathBuf> {
-        self.storages
-            .iter()
-            .flat_map(|storage| storage.list_files())
-            .collect()
-    }
-
     pub fn list_entities(&self) -> Vec<entity::Id> {
         self.storages
             .iter()

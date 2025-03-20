@@ -1,4 +1,8 @@
-use super::{config, entity::{self, zettel}, io::resource};
+use super::{
+    config,
+    entity::{self, zettel},
+    io::resource,
+};
 
 mod files;
 
@@ -40,16 +44,17 @@ impl Vault {
         }
     }
 
-    pub fn load_zettel(&self, id: &entity::Id) -> Option<zettel::Zettel> {
-        let resource = self.find_resource_for_id(id);
+    pub fn load_entity(&self, id: &entity::Id) -> Option<entity::Entity> {
+        let resource = self.find_resource_for_id(id)?;
 
-        match resource {
-            Some(resource) => zettel::Zettel::from_resource(resource)
-                .map_err(|e| {
-                    eprintln!("Failed to load Zettel: {:?}", e);
-                })
-                .ok(),
-            None => None,
+        entity::Entity::from_resource(resource).ok()
+    }
+
+    pub fn load_zettel(&self, id: &entity::Id) -> Option<zettel::Zettel> {
+        if let Some(entity::Entity::Zettel(zettel)) = self.load_entity(id) {
+            Some(zettel)
+        } else {
+            None
         }
     }
 
@@ -58,6 +63,8 @@ impl Vault {
     }
 
     pub fn title_of_entity(&self, id: &entity::Id) -> Option<String> {
-        self.load_zettel_header(id).map(|header| header.title).flatten()
+        self.load_zettel_header(id)
+            .map(|header| header.title)
+            .flatten()
     }
 }
