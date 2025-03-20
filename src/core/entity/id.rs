@@ -1,16 +1,12 @@
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub(crate) struct Sha256 {
+pub struct Sha256 {
     bytes: [u8; 32],
 }
 
 impl Sha256 {
     pub(crate) fn new(bytes: [u8; 32]) -> Sha256 {
         Sha256 { bytes }
-    }
-
-    pub(crate) fn bytes(&self) -> &[u8; 32] {
-        &self.bytes
     }
 
     pub(crate) fn as_string(&self) -> String {
