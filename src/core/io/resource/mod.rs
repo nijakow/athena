@@ -132,6 +132,15 @@ impl Resource {
         &self.path
     }
 
+    pub fn content_hash(&self) -> Option<entity::id::Sha256> {
+        if self.is_usually_hash_addressable() {
+            let content = self.read_to_bytes().ok()?;
+            Some(entity::id::Sha256::hash_bytes(&content))
+        } else {
+            None
+        }
+    }
+
     pub fn is_usually_hash_addressable(&self) -> bool {
         self.metadata()
             .resource_type

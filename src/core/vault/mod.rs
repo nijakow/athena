@@ -31,13 +31,7 @@ impl Vault {
     }
 
     fn find_resource_for_id(&self, id: &entity::Id) -> Option<resource::Resource> {
-        let file = self.files.file_by_id(&id)?;
-
-        if file.exists() {
-            Some(resource::Resource::from_path(file))
-        } else {
-            None
-        }
+        self.files.find_resource_for_id(id)
     }
 
     pub fn load_entity(&self, id: &entity::Id) -> Option<entity::Entity> {

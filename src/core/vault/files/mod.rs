@@ -1,4 +1,4 @@
-use crate::core::{entity, io::resource};
+use crate::core::entity;
 
 pub mod storage;
 
@@ -18,32 +18,10 @@ impl Files {
             .collect()
     }
 
-    pub fn find_file<S: ToString>(&self, name: S) -> Option<std::path::PathBuf> {
-        let name = name.to_string();
-
-        for storage in &self.storages {
-            if let Some(path) = storage.file_if_exists(&name) {
-                return Some(path);
-            }
-        }
-
-        None
-    }
-
-    pub fn file_by_id(&self, id: &crate::core::entity::zettel::Id) -> Option<std::path::PathBuf> {
-        // Try different formats: .zson, .md
-        
-        let extensions = resource::Type::all_extensions();
-
-        // TODO: Iterate over the storages first, then the extensions
-
-        for ext in extensions {
-            let name = format!("{}.{}", id.id(), ext);
-            if let Some(path) = self.find_file(&name) {
-                return Some(path);
-            }
-        }
-
-        None
+    pub fn find_resource_for_id(&self, id: &entity::Id) -> Option<crate::core::io::resource::Resource> {
+        self.storages
+            .iter()
+            .filter_map(|storage| storage.resource_by_id(id))
+            .next()
     }
 }
