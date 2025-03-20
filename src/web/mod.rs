@@ -2,14 +2,25 @@ use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use maud::{html, DOCTYPE};
 use std::{collections::HashMap, sync::Arc};
 
-use crate::core::{entity::{self, zettel::document::conversions::html::AsHtml}, vault};
-
+use crate::core::{
+    entity::{
+        self,
+        zettel::{self, document::conversions::html::AsHtml},
+    },
+    vault,
+};
 
 async fn list_entities(vault: web::Data<Arc<vault::Vault>>) -> impl Responder {
-    let mut zettels: Vec<(entity::Id, String)> = vault.list_entities().into_iter().map(|id| {
-        let title = vault.title_of_entity(&id).unwrap_or_else(|| "Untitled".to_string());
-        (id, title)
-    }).collect::<Vec<_>>();
+    let mut zettels: Vec<(entity::Id, String)> = vault
+        .list_entities()
+        .into_iter()
+        .map(|id| {
+            let title = vault
+                .title_of_entity(&id)
+                .unwrap_or_else(|| "Untitled".to_string());
+            (id, title)
+        })
+        .collect::<Vec<_>>();
 
     zettels.sort_by(|(a, _), (b, _)| a.id().cmp(b.id()));
 
@@ -36,63 +47,60 @@ async fn list_entities(vault: web::Data<Arc<vault::Vault>>) -> impl Responder {
     HttpResponse::Ok().body(html.into_string())
 }
 
+fn generate_show_zettel(_vault: &Arc<vault::Vault>, id: entity::Id, zettel: zettel::Zettel) -> HttpResponse {
+    let title = "Zettel";
 
-fn generate_show_entity(
-    vault: &Arc<vault::Vault>,
-    id: entity::Id,
-) -> HttpResponse {
-    let zettel = vault.load_zettel(&id);
+    let content = zettel.body_as_document().unwrap().as_html();
 
-    match zettel {
-        Some(zettel) => {
-            let title = "Zettel";
-
-            let content = zettel.body_as_document().unwrap().as_html();
-
-            let html = html! {
-                (DOCTYPE)
-                meta charset="utf-8";
-                html {
-                    head {
-                        title { (title) }
-                    }
-                    body {
-                        h1 { (title) }
-                        a href=(format!("{}?action=edit", id.as_safe_uri())) { "Edit" }
-                        br;
-                        (maud::PreEscaped(content))
-                    }
-                }
-            };
-
-            HttpResponse::Ok().body(html.into_string())
+    let html = html! {
+        (DOCTYPE)
+        meta charset="utf-8";
+        html {
+            head {
+                title { (title) }
+            }
+            body {
+                h1 { (title) }
+                a href=(format!("{}?action=edit", id.as_safe_uri())) { "Edit" }
+                br;
+                (maud::PreEscaped(content))
+            }
         }
-        None => {
-            let html = html! {
-                (DOCTYPE)
-                meta charset="utf-8";
-                html {
-                    head {
-                        title { "Zettel" }
-                    }
-                    body {
-                        h1 { "Zettel " i { (id.id()) } " not found" }
-                        p { "Not found" }
-                    }
-                }
-            };
+    };
 
-            HttpResponse::NotFound().body(html.into_string())
+    HttpResponse::Ok().body(html.into_string())
+}
+
+fn generate_404() -> HttpResponse {
+    let html = html! {
+        (DOCTYPE)
+        meta charset="utf-8";
+        html {
+            head {
+                title { "Entity not found" }
+            }
+            body {
+                h1 { "Entity not found" }
+                p { "Not found" }
+            }
         }
+    };
+
+    HttpResponse::NotFound().body(html.into_string())
+}
+
+fn generate_show_entity(vault: &Arc<vault::Vault>, id: entity::Id) -> HttpResponse {
+    let entity = vault.load_entity(&id);
+
+    match entity {
+        Some(entity::Entity::Zettel(zettel)) => generate_show_zettel(vault, id, zettel),
+        _ => generate_404(),
     }
 }
 
-async fn show_entity(
-    vault: web::Data<Arc<vault::Vault>>,
-    id: web::Path<String>,
-) -> HttpResponse {
+async fn show_entity(vault: web::Data<Arc<vault::Vault>>, id: web::Path<String>) -> HttpResponse {
     let id = entity::Id::with_id(id.into_inner());
-    
+
     generate_show_entity(&vault, id)
 }
 
@@ -160,10 +168,9 @@ async fn process_entity(
 
     match action {
         Some("edit") => edit_zettel(vault, id).await,
-        _            => show_entity(vault, id).await,
+        _ => show_entity(vault, id).await,
     }
 }
-
 
 pub async fn go(vault: vault::Vault) -> std::io::Result<()> {
     let vault_data = web::Data::new(Arc::new(vault));
