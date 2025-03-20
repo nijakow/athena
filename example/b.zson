@@ -82,6 +82,24 @@
                     }
                 ]
             }
+        },
+        {
+            "Paragraph": {
+                "nodes": [
+                    {
+                        "Text": "And finally, have a look at "
+                    },
+                    {
+                        "Reference": {
+                            "target": "sha256-d1d0ffb9bb50d63fb7f1a180cc3b9152dccc02e033c6b45ba7ea055c496b623f",
+                            "caption": "the image"
+                        }
+                    },
+                    {
+                        "Text": "!"
+                    }
+                ]
+            }
         }
     ]
 }
