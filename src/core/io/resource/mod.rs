@@ -132,10 +132,10 @@ impl Resource {
         &self.path
     }
 
-    pub fn content_hash(&self) -> Option<entity::id::Sha256> {
+    pub fn content_hash(&self) -> Option<crate::util::hashing::Sha256> {
         if self.is_usually_hash_addressable() {
             let content = self.read_to_bytes().ok()?;
-            Some(entity::id::Sha256::hash_bytes(&content))
+            Some(crate::util::hashing::Sha256::hash_bytes(&content))
         } else {
             None
         }
