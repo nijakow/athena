@@ -22,7 +22,7 @@ async fn list_entities(vault: web::Data<Arc<vault::Vault>>) -> impl Responder {
         })
         .collect::<Vec<_>>();
 
-    zettels.sort_by(|(a, _), (b, _)| a.id().cmp(b.id()));
+    zettels.sort_by(|a, b| a.1.cmp(&b.1));
 
     let html = html! {
         (DOCTYPE)
