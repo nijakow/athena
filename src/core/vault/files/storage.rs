@@ -18,57 +18,61 @@ impl Flags {
 pub struct Storage {
     pub flags: Flags,
     pub base_path: std::path::PathBuf,
+    file_name_cache: std::collections::HashMap<String, std::path::PathBuf>,
 }
 
 impl Storage {
     pub fn new(base_path: std::path::PathBuf, flags: Flags) -> Self {
-        Storage { flags, base_path }
+        let file_name_cache = {
+            let mut files = std::collections::HashMap::new();
+            let mut dirs = vec![base_path.clone()];
+
+            while let Some(dir) = dirs.pop() {
+                println!("Checking directory: {:?}", dir);
+
+                for entry in std::fs::read_dir(&dir).unwrap() {
+                    let entry = entry.unwrap();
+                    let path = entry.path();
+
+                    if path.is_dir() {
+                        dirs.push(path);
+                    } else if path.is_file() {
+                        let name = path.file_name().unwrap().to_string_lossy().to_string();
+                        files.insert(name, path);
+                    }
+                }
+            }
+
+            files
+        };
+
+        Storage {
+            flags,
+            base_path,
+            file_name_cache,
+        }
     }
 
     pub fn list_files(&self) -> Vec<std::path::PathBuf> {
-        let mut files = vec![];
-
-        for entry in std::fs::read_dir(&self.base_path).unwrap() {
-            let entry = entry.unwrap();
-            let path = entry.path();
-
-            if path.is_file() {
-                files.push(path);
-            }
-        }
-
-        files
-    }
-
-    pub fn file<S: ToString>(&self, name: S) -> std::path::PathBuf {
-        self.base_path.join(name.to_string())
+        self.file_name_cache.values().cloned().collect()
     }
 
     pub fn file_if_exists<S: ToString>(&self, name: S) -> Option<std::path::PathBuf> {
-        let path = self.file(name);
-
-        if path.exists() {
-            Some(path)
-        } else {
-            None
-        }
+        let name = name.to_string();
+        self.file_name_cache.get(&name).cloned()
     }
 
     fn list_resources(&self) -> Vec<resource::Resource> {
         self.list_files()
             .iter()
-            .map(|path| {
-                resource::Resource::from_path(path.clone())
-            })
+            .map(|path| resource::Resource::from_path(path.clone()))
             .collect()
     }
 
     pub fn list_entities(&self) -> Vec<entity::Id> {
         self.list_resources()
             .iter()
-            .map(|resource| {
-                entity::Id::for_resource(resource)
-            })
+            .map(|resource| entity::Id::for_resource(resource))
             .collect()
     }
 
@@ -99,7 +103,7 @@ impl Storage {
             entity::Id::Sha256(sha256) => {
                 for resource in self.list_resources() {
                     println!("Checking resource: {:?}", resource.path());
-                    
+
                     if let Some(hash) = resource.content_hash() {
                         if hash == *sha256 {
                             return Some(resource);
