@@ -1,6 +1,8 @@
+#[derive(Debug, Clone, Copy)]
 pub enum Type {
     Athena,
     Obsidian,
+    Pdf,
 }
 
 impl Type {
@@ -8,10 +10,31 @@ impl Type {
         match extension {
             "zson" => Some(Type::Athena),
             "md" => Some(Type::Obsidian),
+            "pdf" => Some(Type::Pdf),
             _ => None,
         }
     }
+
+    pub fn to_extension(&self) -> Option<&'static str> {
+        Some(match self {
+            Type::Athena => "zson",
+            Type::Obsidian => "md",
+            Type::Pdf => "pdf",
+        })
+    }
+
+    pub fn all() -> Vec<Type> {
+        vec![Type::Athena, Type::Obsidian, Type::Pdf]
+    }
+
+    pub fn all_extensions() -> Vec<&'static str> {
+        Self::all()
+            .iter()
+            .map(|t| t.to_extension().unwrap())
+            .collect()
+    }
 }
+
 
 pub struct Metadata {
     pub resource_type: Option<Type>,

@@ -84,6 +84,7 @@ impl Zettel {
 
                 Ok(zettel)
             }
+            Some(resource::Type::Pdf) => Err("PDF not supported".into()),
             None => Err("Unknown resource type".into()),
         }
     }
