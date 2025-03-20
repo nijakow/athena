@@ -172,8 +172,8 @@ pub async fn go(vault: vault::Vault) -> std::io::Result<()> {
         App::new()
             .app_data(vault_data.clone())
             .route("/", web::get().to(list_zettels))
-            .route("/zettel/{id}", web::get().to(process_zettel))
-            .route("/zettel/{id}", web::post().to(post_zettel))
+            .route("/entity/{id}", web::get().to(process_zettel))
+            .route("/entity/{id}", web::post().to(post_zettel))
     })
     .bind("127.0.0.1:8080")?
     .run()

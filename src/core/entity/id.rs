@@ -28,6 +28,6 @@ impl Id {
     }
 
     pub fn as_safe_uri(&self) -> String {
-        format!("/zettel/{}", self.id)
+        format!("/entity/{}", self.id)
     }
 }
