@@ -1,5 +1,12 @@
 use crate::core::entity;
 
+
+#[derive(Debug, Clone, Copy, enum_iterator::Sequence)]
+pub enum ZettelType {
+    Athena,
+    Obsidian,
+}
+
 #[derive(Debug, Clone, Copy, enum_iterator::Sequence)]
 pub enum ImageType {
     Png,
@@ -8,8 +15,7 @@ pub enum ImageType {
 
 #[derive(Debug, Clone, Copy, enum_iterator::Sequence)]
 pub enum Type {
-    Athena,
-    Obsidian,
+    Zettel(ZettelType),
     PlainText,
     Image(ImageType),
     Pdf,
@@ -18,8 +24,8 @@ pub enum Type {
 impl Type {
     pub fn from_extension(extension: &str) -> Option<Self> {
         match extension.to_lowercase().as_str() {
-            "zson" => Some(Type::Athena),
-            "md" => Some(Type::Obsidian),
+            "zson" => Some(Type::Zettel(ZettelType::Athena)),
+            "md" => Some(Type::Zettel(ZettelType::Obsidian)),
             "txt" => Some(Type::PlainText),
             "png" => Some(Type::Image(ImageType::Png)),
             "jpg" => Some(Type::Image(ImageType::Jpg)),
@@ -31,8 +37,8 @@ impl Type {
 
     pub fn to_extension(&self) -> Option<&'static str> {
         Some(match self {
-            Type::Athena => "zson",
-            Type::Obsidian => "md",
+            Type::Zettel(ZettelType::Athena) => "zson",
+            Type::Zettel(ZettelType::Obsidian) => "md",
             Type::PlainText => "txt",
             Type::Image(ImageType::Png) => "png",
             Type::Image(ImageType::Jpg) => "jpg",
@@ -42,8 +48,8 @@ impl Type {
 
     pub fn mime_type(&self) -> Option<&'static str> {
         Some(match self {
-            Type::Athena => "application/json",
-            Type::Obsidian => "text/markdown",
+            Type::Zettel(ZettelType::Athena) => "application/json",
+            Type::Zettel(ZettelType::Obsidian) => "text/markdown",
             Type::PlainText => "text/plain",
             Type::Image(ImageType::Png) => "image/png",
             Type::Image(ImageType::Jpg) => "image/jpeg",
