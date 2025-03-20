@@ -417,6 +417,7 @@ struct CodeBlock {
 }
 
 struct Callout {
+    kind: Option<String>,
     lines: Vec<String>,
 }
 
@@ -523,6 +524,7 @@ impl MarkdownParser {
                     callout.lines.push(line.chars().skip(2).collect());
                 } else {
                     pre_parsed.push(PreParsed::Parsed(Box::new(markdown::Block::Callout(
+                        callout.kind.clone(),
                         self.parse_lines(&callout.lines),
                     ))));
                     current_item = None;
@@ -546,9 +548,24 @@ impl MarkdownParser {
                     pre_parsed.push(PreParsed::Unparsed(Box::new(current_block)));
                     current_block = Vec::new();
                 }
-                // TODO: Check for [!...]
+
+                let line: String = line.chars().skip(2).collect();
+
+                // If the line is "[!kind] text" (ignore leading whitespaces), parse the kind and start a new callout
+
+                let (lines, kind) = if line.starts_with("[!") {
+                    let kind_end = line.find(']').unwrap();
+                    let kind = line.chars().skip(2).take(kind_end - 2).collect();
+                    let line: String = line.chars().skip(kind_end + 2).collect();
+
+                    (vec![], Some(kind))
+                } else {
+                    (vec![line], None)
+                };
+
                 current_item = Some(CurrentItem::Callout(Callout {
-                    lines: vec![line.chars().skip(2).collect()],
+                    kind,
+                    lines,
                 }));
             } else if let Some(block) = self.try_parse_line(line) {
                 if !current_block.is_empty() {
@@ -570,6 +587,7 @@ impl MarkdownParser {
             ))));
         } else if let Some(CurrentItem::Callout(callout)) = current_item {
             pre_parsed.push(PreParsed::Parsed(Box::new(markdown::Block::Callout(
+                callout.kind,
                 self.parse_lines(&callout.lines),
             ))));
         }

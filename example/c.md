@@ -24,6 +24,9 @@ Und das ist ***Salami***! Mit einem #tag und etwas Code: `(cons 1 2)`
 > > Now it gets recursive!
 > Boo
 
+> [!info]
+> This is some info!
+
 ```c
 #include <stdio.h>
 

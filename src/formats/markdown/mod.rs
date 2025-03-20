@@ -89,7 +89,7 @@ pub enum Block {
     Heading(Heading),
     BulletPoint(BulletPoint),
     Code(Option<String>, String),
-    Callout(Blocks),
+    Callout(Option<String>, Blocks),
     Nodes(Nodes),
 }
 
