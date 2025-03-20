@@ -1,6 +1,5 @@
 use crate::core::entity;
 
-
 #[derive(Debug, Clone, Copy, enum_iterator::Sequence)]
 pub enum ZettelType {
     Athena,
@@ -57,6 +56,13 @@ impl Type {
         })
     }
 
+    pub fn is_usually_immutable(&self) -> bool {
+        match self {
+            Type::Zettel(_) => false,
+            _ => true,
+        }
+    }
+
     pub fn all() -> Vec<Self> {
         enum_iterator::all::<Self>().collect()
     }
@@ -68,7 +74,6 @@ impl Type {
             .collect()
     }
 }
-
 
 pub struct Metadata {
     pub resource_type: Option<Type>,
@@ -121,6 +126,16 @@ impl Resource {
         let resource_type = extension.and_then(|e| Type::from_extension(e));
 
         Metadata { resource_type }
+    }
+
+    pub fn path(&self) -> &std::path::Path {
+        &self.path
+    }
+
+    pub fn is_usually_hash_addressable(&self) -> bool {
+        self.metadata()
+            .resource_type
+            .map_or(false, |t| t.is_usually_immutable())
     }
 
     pub fn open_for_reading(&self) -> Result<Box<dyn std::io::Read>, std::io::Error> {

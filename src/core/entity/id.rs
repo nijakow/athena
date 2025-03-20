@@ -1,3 +1,7 @@
+use core::hash;
+
+use crate::core::io::resource;
+
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Sha256 {
@@ -5,8 +9,25 @@ pub struct Sha256 {
 }
 
 impl Sha256 {
-    pub(crate) fn new(bytes: [u8; 32]) -> Sha256 {
-        Sha256 { bytes }
+    pub(crate) fn new(bytes: [u8; 32]) -> Self {
+        Self { bytes }
+    }
+
+    pub(crate) fn from_sha256_digest<D: sha2::Digest>(digest: D) -> Sha256 {
+        let bytes = digest.finalize();
+        let mut sha256_bytes = [0; 32];
+        sha256_bytes.copy_from_slice(&bytes);
+        Sha256::new(sha256_bytes)
+    }
+
+    pub(crate) fn hash_bytes(bytes: &[u8]) -> Self {
+        use sha2::Digest;
+
+        let mut hasher = sha2::Sha256::new();
+
+        hasher.update(bytes);
+
+        Sha256::from_sha256_digest(hasher)
     }
 
     pub(crate) fn as_string(&self) -> String {
@@ -20,25 +41,6 @@ pub enum Id {
     Sha256(Sha256),
     Basic(String),
 }
-
-impl serde::Serialize for Id {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let stringified = match self {
-            Id::Sha256(sha256) => sha256.as_string(),
-            Id::Basic(string) => string.clone(),
-        };
-
-        stringified.serialize(serializer)
-    }
-}
-
-impl<'de> serde::Deserialize<'de> for Id {
-    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let id = String::deserialize(deserializer)?;
-        Ok(Id::from_string(id))
-    }
-}
-
 
 impl Id {
     pub(crate) fn from_sha256(sha: Sha256) -> Id {
@@ -66,6 +68,22 @@ impl Id {
         Id::from_string(id)
     }
 
+    pub(crate) fn for_resource(resource: &resource::Resource) -> Id {
+        if resource.is_usually_hash_addressable() {
+            let content = resource.read_to_bytes().unwrap();
+            Id::from_sha256(Sha256::hash_bytes(&content))
+        } else {
+            let file_name_without_extension = resource
+                .path()
+                .file_stem()
+                .unwrap()
+                .to_string_lossy()
+                .to_string();
+
+            Id::from_basic(file_name_without_extension)
+        }
+    }
+
     pub fn id(&self) -> String {
         match self {
             Id::Sha256(sha256) => sha256.as_string(),
@@ -75,5 +93,23 @@ impl Id {
 
     pub fn as_safe_uri(&self) -> String {
         format!("/entity/{}", self.id())
+    }
+}
+
+impl serde::Serialize for Id {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let stringified = match self {
+            Id::Sha256(sha256) => sha256.as_string(),
+            Id::Basic(string) => string.clone(),
+        };
+
+        stringified.serialize(serializer)
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for Id {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let id = String::deserialize(deserializer)?;
+        Ok(Id::from_string(id))
     }
 }

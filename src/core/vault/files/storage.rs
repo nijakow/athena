@@ -1,4 +1,4 @@
-use crate::core::entity;
+use crate::core::{entity, io::resource};
 
 pub struct Flags {
     pub has_zettels: bool,
@@ -54,12 +54,20 @@ impl Storage {
         }
     }
 
-    pub fn list_entities(&self) -> Vec<entity::Id> {
+    fn list_resources(&self) -> Vec<resource::Resource> {
         self.list_files()
             .iter()
-            .filter_map(|path| {
-                let id = path.file_stem()?.to_str()?;
-                Some(entity::Id::with_id(id))
+            .map(|path| {
+                resource::Resource::from_path(path.clone())
+            })
+            .collect()
+    }
+
+    pub fn list_entities(&self) -> Vec<entity::Id> {
+        self.list_resources()
+            .iter()
+            .map(|resource| {
+                entity::Id::for_resource(resource)
             })
             .collect()
     }
