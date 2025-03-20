@@ -30,10 +30,6 @@ impl Vault {
         self.files.list_entities()
     }
 
-    pub fn list_zettels(&self) -> Vec<entity::Id> {
-        self.list_entities()
-    }
-
     fn find_resource_for_id(&self, id: &entity::Id) -> Option<resource::Resource> {
         let file = self.files.file_by_id(&id)?;
 

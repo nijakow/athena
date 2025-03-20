@@ -2,11 +2,11 @@ use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use maud::{html, DOCTYPE};
 use std::{collections::HashMap, sync::Arc};
 
-use crate::core::{vault, entity::zettel::{self, document::conversions::html::AsHtml}};
+use crate::core::{entity::{self, zettel::document::conversions::html::AsHtml}, vault};
 
 
-async fn list_zettels(vault: web::Data<Arc<vault::Vault>>) -> impl Responder {
-    let mut zettels: Vec<(zettel::Id, String)> = vault.list_zettels().into_iter().map(|id| {
+async fn list_entities(vault: web::Data<Arc<vault::Vault>>) -> impl Responder {
+    let mut zettels: Vec<(entity::Id, String)> = vault.list_entities().into_iter().map(|id| {
         let title = vault.title_of_entity(&id).unwrap_or_else(|| "Untitled".to_string());
         (id, title)
     }).collect::<Vec<_>>();
@@ -37,9 +37,9 @@ async fn list_zettels(vault: web::Data<Arc<vault::Vault>>) -> impl Responder {
 }
 
 
-fn generate_show_zettel(
+fn generate_show_entity(
     vault: &Arc<vault::Vault>,
-    id: zettel::Id,
+    id: entity::Id,
 ) -> HttpResponse {
     let zettel = vault.load_zettel(&id);
 
@@ -87,20 +87,20 @@ fn generate_show_zettel(
     }
 }
 
-async fn show_zettel(
+async fn show_entity(
     vault: web::Data<Arc<vault::Vault>>,
     id: web::Path<String>,
 ) -> HttpResponse {
-    let id = zettel::Id::with_id(id.into_inner());
+    let id = entity::Id::with_id(id.into_inner());
     
-    generate_show_zettel(&vault, id)
+    generate_show_entity(&vault, id)
 }
 
 pub async fn edit_zettel(
     vault: web::Data<Arc<vault::Vault>>,
     id: web::Path<String>,
 ) -> HttpResponse {
-    let id = zettel::Id::with_id(id.into_inner());
+    let id = entity::Id::with_id(id.into_inner());
     let zettel = vault.load_zettel(&id);
 
     let html = html! {
@@ -126,12 +126,12 @@ pub async fn edit_zettel(
     HttpResponse::Ok().body(html.into_string())
 }
 
-async fn post_zettel(
+async fn post_entity(
     vault: web::Data<Arc<vault::Vault>>,
     id: web::Path<String>,
     body: web::Form<HashMap<String, String>>,
 ) -> HttpResponse {
-    let id = zettel::Id::with_id(id.into_inner());
+    let id = entity::Id::with_id(id.into_inner());
     let content = body.get("content").unwrap();
 
     println!("Received content: {}", content);
@@ -148,10 +148,10 @@ async fn post_zettel(
     }
 
     // We are okay and we are returning the Zettel
-    generate_show_zettel(&vault, id)
+    generate_show_entity(&vault, id)
 }
 
-async fn process_zettel(
+async fn process_entity(
     vault: web::Data<Arc<vault::Vault>>,
     id: web::Path<String>,
     query: web::Query<HashMap<String, String>>,
@@ -160,7 +160,7 @@ async fn process_zettel(
 
     match action {
         Some("edit") => edit_zettel(vault, id).await,
-        _            => show_zettel(vault, id).await,
+        _            => show_entity(vault, id).await,
     }
 }
 
@@ -171,9 +171,9 @@ pub async fn go(vault: vault::Vault) -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(vault_data.clone())
-            .route("/", web::get().to(list_zettels))
-            .route("/entity/{id}", web::get().to(process_zettel))
-            .route("/entity/{id}", web::post().to(post_zettel))
+            .route("/", web::get().to(list_entities))
+            .route("/entity/{id}", web::get().to(process_entity))
+            .route("/entity/{id}", web::post().to(post_entity))
     })
     .bind("127.0.0.1:8080")?
     .run()
