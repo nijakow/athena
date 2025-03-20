@@ -1,3 +1,4 @@
+use crate::core::entity;
 
 pub struct Flags {
     pub has_zettels: bool,
@@ -14,7 +15,6 @@ impl Flags {
     }
 }
 
-
 pub struct Storage {
     pub flags: Flags,
     pub base_path: std::path::PathBuf,
@@ -22,10 +22,7 @@ pub struct Storage {
 
 impl Storage {
     pub fn new(base_path: std::path::PathBuf, flags: Flags) -> Self {
-        Storage {
-            flags,
-            base_path,
-        }
+        Storage { flags, base_path }
     }
 
     pub fn list_files(&self) -> Vec<std::path::PathBuf> {
@@ -55,5 +52,15 @@ impl Storage {
         } else {
             None
         }
+    }
+
+    pub fn list_entities(&self) -> Vec<entity::Id> {
+        self.list_files()
+            .iter()
+            .filter_map(|path| {
+                let id = path.file_stem()?.to_str()?;
+                Some(entity::Id::with_id(id))
+            })
+            .collect()
     }
 }

@@ -7,7 +7,7 @@ use crate::core::{vault, entity::zettel::{self, document::conversions::html::AsH
 
 async fn list_zettels(vault: web::Data<Arc<vault::Vault>>) -> impl Responder {
     let mut zettels: Vec<(zettel::Id, String)> = vault.list_zettels().into_iter().map(|id| {
-        let title = vault.title_of(&id).unwrap_or_else(|| "Untitled".to_string());
+        let title = vault.title_of_entity(&id).unwrap_or_else(|| "Untitled".to_string());
         (id, title)
     }).collect::<Vec<_>>();
 
@@ -41,7 +41,7 @@ fn generate_show_zettel(
     vault: &Arc<vault::Vault>,
     id: zettel::Id,
 ) -> HttpResponse {
-    let zettel = vault.load(&id);
+    let zettel = vault.load_zettel(&id);
 
     match zettel {
         Some(zettel) => {
@@ -101,7 +101,7 @@ pub async fn edit_zettel(
     id: web::Path<String>,
 ) -> HttpResponse {
     let id = zettel::Id::with_id(id.into_inner());
-    let zettel = vault.load(&id);
+    let zettel = vault.load_zettel(&id);
 
     let html = html! {
         (DOCTYPE)
@@ -136,7 +136,7 @@ async fn post_zettel(
 
     println!("Received content: {}", content);
 
-    let zettel = vault.load(&id);
+    let zettel = vault.load_zettel(&id);
 
     match zettel {
         Some(zettel) => {

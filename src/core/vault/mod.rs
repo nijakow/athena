@@ -1,4 +1,4 @@
-use super::{config, entity::zettel, io::resource};
+use super::{config, entity::{self, zettel}, io::resource};
 
 mod files;
 
@@ -22,18 +22,15 @@ impl Vault {
         Ok(Self::new(config))
     }
 
-    pub fn list_zettels(&self) -> Vec<zettel::Id> {
-        self.files
-            .list_files()
-            .iter()
-            .filter_map(|path| {
-                let id = path.file_stem()?.to_str()?;
-                Some(zettel::Id::with_id(id))
-            })
-            .collect()
+    pub fn list_entities(&self) -> Vec<entity::Id> {
+        self.files.list_entities()
     }
 
-    fn find_resource_for_id(&self, id: &zettel::Id) -> Option<resource::Resource> {
+    pub fn list_zettels(&self) -> Vec<entity::Id> {
+        self.list_entities()
+    }
+
+    fn find_resource_for_id(&self, id: &entity::Id) -> Option<resource::Resource> {
         let file = self.files.file_by_id(&id)?;
 
         if file.exists() {
@@ -43,7 +40,7 @@ impl Vault {
         }
     }
 
-    pub fn load(&self, id: &zettel::Id) -> Option<zettel::Zettel> {
+    pub fn load_zettel(&self, id: &entity::Id) -> Option<zettel::Zettel> {
         let resource = self.find_resource_for_id(id);
 
         match resource {
@@ -56,11 +53,11 @@ impl Vault {
         }
     }
 
-    pub fn load_header(&self, id: &zettel::Id) -> Option<zettel::Header> {
-        self.load(id).map(|zettel| zettel.header)
+    pub fn load_zettel_header(&self, id: &entity::Id) -> Option<zettel::Header> {
+        self.load_zettel(id).map(|zettel| zettel.header)
     }
 
-    pub fn title_of(&self, id: &zettel::Id) -> Option<String> {
-        self.load_header(id).map(|header| header.title).flatten()
+    pub fn title_of_entity(&self, id: &entity::Id) -> Option<String> {
+        self.load_zettel_header(id).map(|header| header.title).flatten()
     }
 }
