@@ -1,6 +1,6 @@
 use crate::core::entity;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, enum_iterator::Sequence)]
 pub enum Type {
     Athena,
     Obsidian,
@@ -9,7 +9,7 @@ pub enum Type {
 }
 
 impl Type {
-    pub fn from_extension(extension: &str) -> Option<Type> {
+    pub fn from_extension(extension: &str) -> Option<Self> {
         match extension {
             "zson" => Some(Type::Athena),
             "md" => Some(Type::Obsidian),
@@ -37,8 +37,8 @@ impl Type {
         })
     }
 
-    pub fn all() -> Vec<Type> {
-        vec![Type::Athena, Type::Obsidian, Type::Pdf]
+    pub fn all() -> Vec<Self> {
+        enum_iterator::all::<Self>().collect()
     }
 
     pub fn all_extensions() -> Vec<&'static str> {
