@@ -519,7 +519,7 @@ impl MarkdownParser {
                     cb.lines.push(line.clone());
                 }
             } else if let Some(CurrentItem::Callout(callout)) = &mut current_item {
-                if line.starts_with("> ") {
+                if line.starts_with(">") {
                     callout.lines.push(line.chars().skip(2).collect());
                 } else {
                     pre_parsed.push(PreParsed::Parsed(Box::new(markdown::Block::Callout(
@@ -541,11 +541,12 @@ impl MarkdownParser {
                     },
                     lines: Vec::new(),
                 }));
-            } else if line.starts_with("> ") {
+            } else if line.starts_with(">") {
                 if !current_block.is_empty() {
                     pre_parsed.push(PreParsed::Unparsed(Box::new(current_block)));
                     current_block = Vec::new();
                 }
+                // TODO: Check for [!...]
                 current_item = Some(CurrentItem::Callout(Callout {
                     lines: vec![line.chars().skip(2).collect()],
                 }));
@@ -562,6 +563,15 @@ impl MarkdownParser {
 
         if !current_block.is_empty() {
             pre_parsed.push(PreParsed::Unparsed(Box::new(current_block)));
+        } else if let Some(CurrentItem::CodeBlock(cb)) = current_item {
+            pre_parsed.push(PreParsed::Parsed(Box::new(markdown::Block::Code(
+                cb.lang,
+                cb.lines.join("\n"),
+            ))));
+        } else if let Some(CurrentItem::Callout(callout)) = current_item {
+            pre_parsed.push(PreParsed::Parsed(Box::new(markdown::Block::Callout(
+                self.parse_lines(&callout.lines),
+            ))));
         }
 
         pre_parsed

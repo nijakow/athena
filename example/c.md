@@ -11,8 +11,18 @@ Das ist *Burgunder* und das ist **Bordeaux**!
 Und das ist ***Salami***! Mit einem #tag und etwas Code: `(cons 1 2)`
 
 > [!quote]
-> Twas brillig, and the slithy toves
-
+> # Jabberwocky
+> Twas brillig, and the *slithy* toves
+> and so on...
+> 
+> Blah
+>
+> ```lisp
+> (defun square (x) (* x x))
+> ```
+>
+> > Now it gets recursive!
+> Boo
 
 ```c
 #include <stdio.h>
