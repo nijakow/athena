@@ -1,19 +1,29 @@
 use crate::core::entity;
 
 #[derive(Debug, Clone, Copy, enum_iterator::Sequence)]
+pub enum ImageType {
+    Png,
+    Jpg,
+}
+
+#[derive(Debug, Clone, Copy, enum_iterator::Sequence)]
 pub enum Type {
     Athena,
     Obsidian,
     PlainText,
+    Image(ImageType),
     Pdf,
 }
 
 impl Type {
     pub fn from_extension(extension: &str) -> Option<Self> {
-        match extension {
+        match extension.to_lowercase().as_str() {
             "zson" => Some(Type::Athena),
             "md" => Some(Type::Obsidian),
             "txt" => Some(Type::PlainText),
+            "png" => Some(Type::Image(ImageType::Png)),
+            "jpg" => Some(Type::Image(ImageType::Jpg)),
+            "jpeg" => Some(Type::Image(ImageType::Jpg)),
             "pdf" => Some(Type::Pdf),
             _ => None,
         }
@@ -24,6 +34,8 @@ impl Type {
             Type::Athena => "zson",
             Type::Obsidian => "md",
             Type::PlainText => "txt",
+            Type::Image(ImageType::Png) => "png",
+            Type::Image(ImageType::Jpg) => "jpg",
             Type::Pdf => "pdf",
         })
     }
@@ -33,6 +45,8 @@ impl Type {
             Type::Athena => "application/json",
             Type::Obsidian => "text/markdown",
             Type::PlainText => "text/plain",
+            Type::Image(ImageType::Png) => "image/png",
+            Type::Image(ImageType::Jpg) => "image/jpeg",
             Type::Pdf => "application/pdf",
         })
     }

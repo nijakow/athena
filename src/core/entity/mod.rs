@@ -31,10 +31,10 @@ impl Entity {
 
                 Ok(Entity::Zettel(zettel))
             }
-            Some(resource::Type::PlainText) => {
+            Some(_) => {
+                // TODO: Check file size and decide if it's too big to read into memory
                 Ok(Entity::File(resource.read_to_file()?))
             }
-            Some(resource::Type::Pdf) => Err("PDF not supported".into()),
             None => Err("Unknown resource type".into()),
         }
     }
