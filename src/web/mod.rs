@@ -71,22 +71,53 @@ fn generate_show_zettel(_vault: &Arc<vault::Vault>, id: entity::Id, zettel: zett
     HttpResponse::Ok().body(html.into_string())
 }
 
-fn generate_404() -> HttpResponse {
+fn generate_http_error_response(code: actix_web::http::StatusCode, message: Option<String>) -> HttpResponse {
+    let headline = match code {
+        actix_web::http::StatusCode::NOT_FOUND => "Not found",
+        _ => "Error",
+    };
+
+    let status = match message {
+        Some(message) => format!("{}: {}", code, message),
+        None => format!("{}", code),
+    };
+    
     let html = html! {
         (DOCTYPE)
         meta charset="utf-8";
         html {
             head {
-                title { "Entity not found" }
+                title { "Error" }
             }
             body {
-                h1 { "Entity not found" }
-                p { "Not found" }
+                h1 { (headline) }
+                p { (status) }
             }
         }
     };
 
-    HttpResponse::NotFound().body(html.into_string())
+    HttpResponse::build(code).body(html.into_string())
+}
+
+fn generate_404() -> HttpResponse {
+    generate_http_error_response(actix_web::http::StatusCode::NOT_FOUND, None)
+}
+
+fn generate_download_file(file: entity::file::File) -> HttpResponse {
+    let mime = file.mime_type();
+    let content = file.content();
+
+
+    match content {
+        Ok(content) => {
+            HttpResponse::Ok()
+                .content_type(mime)
+                .body(content)
+        }
+        Err(_) => {
+            generate_http_error_response(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, Some("Could not read file".to_string()))
+        }
+    }
 }
 
 fn generate_show_entity(vault: &Arc<vault::Vault>, id: entity::Id) -> HttpResponse {
@@ -94,6 +125,7 @@ fn generate_show_entity(vault: &Arc<vault::Vault>, id: entity::Id) -> HttpRespon
 
     match entity {
         Some(entity::Entity::Zettel(zettel)) => generate_show_zettel(vault, id, zettel),
+        Some(entity::Entity::File(file)) => generate_download_file(file),
         _ => generate_404(),
     }
 }

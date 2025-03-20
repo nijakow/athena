@@ -23,6 +23,14 @@ impl Type {
         })
     }
 
+    pub fn mime_type(&self) -> Option<&'static str> {
+        Some(match self {
+            Type::Athena => "application/json",
+            Type::Obsidian => "text/markdown",
+            Type::Pdf => "application/pdf",
+        })
+    }
+
     pub fn all() -> Vec<Type> {
         vec![Type::Athena, Type::Obsidian, Type::Pdf]
     }
