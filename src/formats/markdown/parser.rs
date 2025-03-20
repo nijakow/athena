@@ -416,8 +416,13 @@ struct CodeBlock {
     lines: Vec<String>,
 }
 
+struct Callout {
+    lines: Vec<String>,
+}
+
 enum CurrentItem {
     CodeBlock(CodeBlock),
+    Callout(Callout),
 }
 
 pub struct MarkdownParser {
@@ -497,12 +502,12 @@ impl MarkdownParser {
         }
     }
 
-    pub fn pre_parse(&self) -> Vec<PreParsed> {
+    pub fn pre_parse_lines(&self, lines: &Vec<String>) -> Vec<PreParsed> {
         let mut pre_parsed = Vec::new();
         let mut current_block = Vec::new();
         let mut current_item = None;
 
-        for line in &self.lines {
+        for line in lines {
             if let Some(CurrentItem::CodeBlock(cb)) = &mut current_item {
                 if line == "```" {
                     pre_parsed.push(PreParsed::Parsed(Box::new(markdown::Block::Code(
@@ -512,6 +517,16 @@ impl MarkdownParser {
                     current_item = None;
                 } else {
                     cb.lines.push(line.clone());
+                }
+            } else if let Some(CurrentItem::Callout(callout)) = &mut current_item {
+                if line.starts_with("> ") {
+                    callout.lines.push(line.chars().skip(2).collect());
+                } else {
+                    pre_parsed.push(PreParsed::Parsed(Box::new(markdown::Block::Callout(
+                        self.parse_lines(&callout.lines),
+                    ))));
+                    current_item = None;
+                    current_block.push(line.clone());
                 }
             } else if line.starts_with("```") {
                 if !current_block.is_empty() {
@@ -525,6 +540,14 @@ impl MarkdownParser {
                         None
                     },
                     lines: Vec::new(),
+                }));
+            } else if line.starts_with("> ") {
+                if !current_block.is_empty() {
+                    pre_parsed.push(PreParsed::Unparsed(Box::new(current_block)));
+                    current_block = Vec::new();
+                }
+                current_item = Some(CurrentItem::Callout(Callout {
+                    lines: vec![line.chars().skip(2).collect()],
                 }));
             } else if let Some(block) = self.try_parse_line(line) {
                 if !current_block.is_empty() {
@@ -544,17 +567,17 @@ impl MarkdownParser {
         pre_parsed
     }
 
+    fn parse_lines(&self, lines: &Vec<String>) -> markdown::Blocks {
+        self.pre_parse_lines(lines).into_iter().map(|pre_parsed| match pre_parsed {
+            PreParsed::Parsed(block) => *block,
+            PreParsed::Unparsed(lines) => {
+                markdown::Block::Nodes(self.parse_paragraph(&lines.join("\n")))
+            }
+        }).collect()
+    }
+
     pub fn parse(&self) -> Result<markdown::Document, ParseError> {
-        let blocks = self
-            .pre_parse()
-            .into_iter()
-            .map(|pre_parsed| match pre_parsed {
-                PreParsed::Parsed(block) => *block,
-                PreParsed::Unparsed(lines) => {
-                    markdown::Block::Nodes(self.parse_paragraph(&lines.join("\n")))
-                }
-            })
-            .collect();
+        let blocks = self.parse_lines(&self.lines);
 
         Ok(markdown::Document { blocks })
     }

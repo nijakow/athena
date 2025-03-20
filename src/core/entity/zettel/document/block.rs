@@ -49,6 +49,12 @@ pub mod callout {
         pub kind: Kind,
         pub blocks: Blocks,
     }
+
+    impl Callout {
+        pub fn new(kind: Kind, blocks: Blocks) -> Callout {
+            Callout { kind, blocks }
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]

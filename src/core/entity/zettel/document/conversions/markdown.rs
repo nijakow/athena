@@ -57,6 +57,12 @@ fn convert_block(block: &markdown::Block) -> Result<document::block::Block, Conv
         markdown::Block::Code(lang, code) => {
             convert_code(lang, code).map(document::block::Block::CodeBlock)
         }
+        markdown::Block::Callout(callout) => Ok(document::block::Block::Callout(
+            document::block::callout::Callout::new(
+                document::block::callout::Kind::Basic,
+                convert_blocks(callout)?,
+            ),
+        )),
         markdown::Block::Nodes(nodes) => Ok(document::block::Block::Paragraph(
             document::block::Paragraph {
                 nodes: convert_nodes(nodes)?,
