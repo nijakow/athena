@@ -25,7 +25,7 @@ impl AsHtml for document::node::Node {
         match self {
             Node::Newline => "<br/>".to_string(),
             Node::Text(text) => {
-                let text = escape(text);
+                // let text = escape(text);
                 html! { (text) }.into_string()
             }
             Node::Tag(tag) => {
