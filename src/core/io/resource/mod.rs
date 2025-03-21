@@ -71,8 +71,8 @@ impl Type {
             .copied()
     }
 
-    pub fn mime_type(&self) -> Option<&'static str> {
-        Some(match self {
+    pub fn mime_type(&self) -> &'static str {
+        match self {
             Type::Zettel(ZettelType::Athena) => "application/json",
             Type::Zettel(ZettelType::Obsidian) => "text/markdown",
             Type::Document(DocumentType::PlainText) => "text/plain",
@@ -87,7 +87,7 @@ impl Type {
             Type::Video(VideoType::Webm) => "video/webm",
             Type::Video(VideoType::Ogg) => "video/ogg",
             Type::Unknown => "application/octet-stream",
-        })
+        }
     }
 
     pub fn is_usually_immutable(&self) -> bool {

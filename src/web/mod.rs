@@ -6,8 +6,7 @@ use crate::core::{
     entity::{
         self,
         zettel::{self, document::conversions::html::AsHtml},
-    },
-    vault,
+    }, io::resource, vault
 };
 
 fn generate_http_error_response(
@@ -118,12 +117,54 @@ fn generate_download_file(file: entity::file::File) -> HttpResponse {
     HttpResponse::Ok().content_type(mime).body(content)
 }
 
+fn generate_show_file(id: entity::Id, file: entity::file::File) -> HttpResponse {
+    let title = file.title().unwrap_or_else(|| "Untitled".to_string());
+    
+    let file_type = file.file_type();
+
+    let mime = file_type.mime_type();
+
+    let displayed_content_html = match file_type {
+        resource::Type::Document(resource::DocumentType::PlainText) => {
+            let content = std::str::from_utf8(file.content()).unwrap_or("Content not displayed");
+            html! {
+                pre { (content) }
+            }
+        },
+        resource::Type::Image(_) => {
+            html! {
+                img src=(id.as_safe_download_uri()) alt=(title) {}
+            }
+        }
+        _ => html! {
+            p { "Content not displayed" }
+        },
+    };
+
+    let html = html! {
+        (DOCTYPE)
+        meta charset="utf-8";
+        html {
+            head {
+                title { (title) }
+            }
+            body {
+                h1 { (title) }
+                p { "MIME type: " code { (mime) } }
+                (displayed_content_html)
+            }
+        }
+    };
+
+    HttpResponse::Ok().body(html.into_string())
+}
+
 fn generate_show_entity(vault: &Arc<vault::Vault>, id: entity::Id) -> HttpResponse {
     let entity = vault.load_entity(&id);
 
     match entity {
         Some(entity::Entity::Zettel(zettel)) => generate_show_zettel(vault, id, zettel),
-        Some(entity::Entity::File(file)) => generate_download_file(file),
+        Some(entity::Entity::File(file)) => generate_show_file(id, file),
         _ => generate_404(),
     }
 }

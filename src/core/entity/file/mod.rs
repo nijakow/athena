@@ -15,10 +15,12 @@ impl File {
         }
     }
 
-    pub fn mime_type(&self) -> &str {
+    pub fn file_type(&self) -> Type {
         self.file_type
-            .mime_type()
-            .unwrap_or("application/octet-stream")
+    }
+
+    pub fn mime_type(&self) -> &str {
+        self.file_type.mime_type()
     }
 
     pub fn title(&self) -> Option<String> {

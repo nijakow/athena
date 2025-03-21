@@ -62,6 +62,10 @@ impl Id {
     pub fn as_safe_uri(&self) -> String {
         format!("/entity/{}", self.id())
     }
+
+    pub fn as_safe_download_uri(&self) -> String {
+        format!("/raw/{}", self.id())
+    }
 }
 
 impl serde::Serialize for Id {
