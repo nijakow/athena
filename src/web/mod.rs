@@ -113,9 +113,9 @@ fn generate_show_zettel(
     HttpResponse::Ok().body(html.into_string())
 }
 
-fn generate_download_file(file: entity::file::File) -> HttpResponse {
-    let mime = file.metadata().mime_type().to_string();
-    let content = file.extract_content();
+fn generate_download_resource(resource: resource::Resource) -> HttpResponse {
+    let mime = resource.metadata().resource_type.map(|rt| rt.mime_type()).unwrap_or_else(|| "application/octet-stream");
+    let content = resource.read_to_bytes().unwrap();
 
     HttpResponse::Ok().content_type(mime).body(content)
 }
@@ -254,14 +254,13 @@ async fn download_entity(
 ) -> HttpResponse {
     let id = entity::Id::with_id(id.into_inner());
 
-    let entity = vault.load_entity(&id);
-
-    match entity {
-        Some(entity::Entity::File(file)) => generate_download_file(file),
-        _ => generate_http_error_response(
+    if let Some(resource) = vault.load_resource(&id) {
+        generate_download_resource(resource)
+    } else {
+        generate_http_error_response(
             actix_web::http::StatusCode::NOT_IMPLEMENTED,
             Some("Download for this type not implemented yet!".to_string()),
-        ),
+        )
     }
 }
 

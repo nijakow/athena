@@ -34,6 +34,10 @@ impl Vault {
         self.files.find_resource_for_id(id)
     }
 
+    pub fn load_resource(&self, id: &entity::Id) -> Option<resource::Resource> {
+        self.find_resource_for_id(id)
+    }
+
     pub fn load_entity(&self, id: &entity::Id) -> Option<entity::Entity> {
         let resource = self.find_resource_for_id(id)?;
 
