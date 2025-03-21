@@ -23,6 +23,13 @@ pub enum ImageType {
 }
 
 #[derive(Debug, Clone, Copy, enum_iterator::Sequence)]
+pub enum AudioType {
+    Mp3,
+    Ogg,
+    Wav,
+}
+
+#[derive(Debug, Clone, Copy, enum_iterator::Sequence)]
 pub enum VideoType {
     Mp4,
     Webm,
@@ -34,6 +41,7 @@ pub enum Type {
     Zettel(ZettelType),
     Document(DocumentType),
     Image(ImageType),
+    Audio(AudioType),
     Video(VideoType),
     Unknown,
 }
@@ -52,6 +60,9 @@ impl Type {
             Type::Image(ImageType::Gif) => vec!["gif"],
             Type::Image(ImageType::Svg) => vec!["svg"],
             Type::Image(ImageType::Bmp) => vec!["bmp"],
+            Type::Audio(AudioType::Mp3) => vec!["mp3"],
+            Type::Audio(AudioType::Ogg) => vec!["ogg"],
+            Type::Audio(AudioType::Wav) => vec!["wav"],
             Type::Video(VideoType::Mp4) => vec!["mp4"],
             Type::Video(VideoType::Webm) => vec!["webm"],
             Type::Video(VideoType::Ogg) => vec!["ogg"],
@@ -83,6 +94,9 @@ impl Type {
             Type::Image(ImageType::Gif) => "image/gif",
             Type::Image(ImageType::Svg) => "image/svg+xml",
             Type::Image(ImageType::Bmp) => "image/bmp",
+            Type::Audio(AudioType::Mp3) => "audio/mpeg",
+            Type::Audio(AudioType::Ogg) => "audio/ogg",
+            Type::Audio(AudioType::Wav) => "audio/wav",
             Type::Video(VideoType::Mp4) => "video/mp4",
             Type::Video(VideoType::Webm) => "video/webm",
             Type::Video(VideoType::Ogg) => "video/ogg",

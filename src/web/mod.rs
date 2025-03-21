@@ -130,10 +130,23 @@ fn generate_show_file(id: entity::Id, file: entity::file::File) -> HttpResponse 
             html! {
                 pre { (content) }
             }
-        },
+        }
+        resource::Type::Document(resource::DocumentType::Pdf) => {
+            // Make sure that the PDF has a certain height, it should not be crushed vertically
+            html! {
+                object class="pdf" data=(id.as_safe_download_uri()) type="application/pdf" width="100%" style="aspect-ratio: 4 / 3" {}
+            }
+        }
         resource::Type::Image(_) => {
             html! {
-                img src=(id.as_safe_download_uri()) alt=(title) {}
+                img src=(id.as_safe_download_uri()) alt=(title) width="100%" {}
+            }
+        }
+        resource::Type::Audio(_) => {
+            html! {
+                audio controls {
+                    source src=(id.as_safe_download_uri()) type=(mime) {}
+                }
             }
         }
         _ => html! {
