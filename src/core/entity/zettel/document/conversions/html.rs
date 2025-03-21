@@ -9,8 +9,14 @@ impl HtmlConversionContext {
         Self { vault }
     }
 
-    fn generate_embed(&self, id: &entity::Id) -> String {
-        format!("<embed src=\"{}\"/>", id.as_safe_download_uri())
+    fn generate_embed(&self, id: &entity::Id) -> maud::PreEscaped<String> {
+        if let Some(entity) = self.vault.load_entity(id) {
+            crate::util::embedding::embed_entity_for_id(&entity, id, self)
+        } else {
+            maud::html! {
+                p { "Failed to load entity" }
+            }
+        }
     }
 }
 
@@ -55,7 +61,7 @@ impl AsHtml for document::node::Node {
                 let caption = &link.caption;
 
                 if link.embed {
-                    context.generate_embed(target)
+                    context.generate_embed(target).into_string()
                 } else {
                     format!(
                         "<a href=\"{}\">{}</a>",

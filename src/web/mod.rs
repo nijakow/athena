@@ -127,7 +127,7 @@ fn generate_show_file(id: entity::Id, file: entity::file::File) -> HttpResponse 
 
     let mime = file_type.mime_type();
 
-    let displayed_content_html = crate::util::embedding::embed_file_for_id(&file, &id, &title);
+    let displayed_content_html = crate::util::embedding::embed_file_for_id(&file, &id, &title, true);
 
     let html = html! {
         (DOCTYPE)
