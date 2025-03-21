@@ -1,4 +1,4 @@
-use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{http::header, web, App, HttpResponse, HttpServer, Responder};
 use maud::{html, DOCTYPE};
 use std::{collections::HashMap, sync::Arc};
 
@@ -6,7 +6,9 @@ use crate::core::{
     entity::{
         self,
         zettel::{self, document::conversions::html::AsHtml},
-    }, io::resource, vault
+    },
+    io::resource,
+    vault,
 };
 
 fn generate_http_error_response(
@@ -43,7 +45,6 @@ fn generate_http_error_response(
 fn generate_404() -> HttpResponse {
     generate_http_error_response(actix_web::http::StatusCode::NOT_FOUND, None)
 }
-
 
 async fn list_entities(vault: web::Data<Arc<vault::Vault>>) -> impl Responder {
     let mut zettels: Vec<(entity::Id, String)> = vault
@@ -119,7 +120,7 @@ fn generate_download_file(file: entity::file::File) -> HttpResponse {
 
 fn generate_show_file(id: entity::Id, file: entity::file::File) -> HttpResponse {
     let title = file.title().unwrap_or_else(|| "Untitled".to_string());
-    
+
     let file_type = file.file_type();
 
     let mime = file_type.mime_type();
@@ -154,10 +155,22 @@ fn generate_show_entity(vault: &Arc<vault::Vault>, id: entity::Id) -> HttpRespon
     }
 }
 
-async fn show_entity(vault: web::Data<Arc<vault::Vault>>, id: web::Path<String>) -> HttpResponse {
-    let id = entity::Id::with_id(id.into_inner());
+async fn show_entity(
+    vault: web::Data<Arc<vault::Vault>>,
+    id: web::Path<String>,
+    header: web::Header<actix_web::http::header::Accept>,
+) -> HttpResponse {
+    // If we accept HTML, we will show the entity. Otherwise, we will download it.
 
-    generate_show_entity(&vault, id)
+    let accept_html: bool = header
+        .iter()
+        .any(|accept| accept.to_string().to_lowercase().contains("text/html"));
+
+    if accept_html {
+        generate_show_entity(&vault, entity::Id::with_id(id.into_inner()))
+    } else {
+        download_entity(vault, id).await
+    }
 }
 
 pub async fn edit_zettel(
@@ -219,16 +232,20 @@ async fn process_entity(
     vault: web::Data<Arc<vault::Vault>>,
     id: web::Path<String>,
     query: web::Query<HashMap<String, String>>,
+    accept: web::Header<actix_web::http::header::Accept>,
 ) -> impl Responder {
     let action = query.get("action").map(|s| s.as_str());
 
     match action {
         Some("edit") => edit_zettel(vault, id).await,
-        _ => show_entity(vault, id).await,
+        _ => show_entity(vault, id, accept).await,
     }
 }
 
-async fn download_entity(vault: web::Data<Arc<vault::Vault>>, id: web::Path<String>) -> HttpResponse {
+async fn download_entity(
+    vault: web::Data<Arc<vault::Vault>>,
+    id: web::Path<String>,
+) -> HttpResponse {
     let id = entity::Id::with_id(id.into_inner());
 
     let entity = vault.load_entity(&id);

@@ -45,7 +45,7 @@ impl AsHtml for document::node::Node {
 
                 if link.embed {
                     format!(
-                        "<img src=\"{}\"/>",
+                        "<embed src=\"{}\"/>",
                         target.as_safe_download_uri()
                     )
                 } else {
