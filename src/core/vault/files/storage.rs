@@ -80,7 +80,9 @@ impl Storage {
     pub fn list_entities(&self) -> Vec<entity::Id> {
         self.list_resources()
             .iter()
-            .map(|resource| entity::Id::for_resource(resource, &mut *self.resource_cache.write().unwrap()))
+            .map(|resource| {
+                entity::Id::for_resource(resource, &mut *self.resource_cache.write().unwrap())
+            })
             .collect()
     }
 
@@ -89,10 +91,20 @@ impl Storage {
 
         let extensions = resource::Type::all_extensions();
 
-        // TODO: Iterate over the storages first, then the extensions
+        // If the name contains a dot, and the dot is not the leading character, then we assume
+        // that the name already contains a file extension.
+        let has_file_extension = name.contains('.') && !name.starts_with('.');
 
-        for ext in extensions {
-            let name = format!("{}.{}", name, ext);
+        let variants = if has_file_extension {
+            vec![name.to_string()]
+        } else {
+            extensions
+                .iter()
+                .map(|ext| format!("{}.{}", name, ext))
+                .collect()
+        };
+
+        for name in variants {
             if let Some(path) = self.file_if_exists(&name) {
                 return Some(path);
             }
@@ -110,7 +122,9 @@ impl Storage {
         match id {
             entity::Id::Sha256(sha256) => {
                 for resource in self.list_resources() {
-                    if let Some(hash) = resource.content_hash(&mut *self.resource_cache.write().unwrap()) {
+                    if let Some(hash) =
+                        resource.content_hash(&mut *self.resource_cache.write().unwrap())
+                    {
                         if hash == *sha256 {
                             return Some(resource);
                         }
