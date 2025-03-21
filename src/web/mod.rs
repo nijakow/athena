@@ -10,6 +10,42 @@ use crate::core::{
     vault,
 };
 
+fn generate_http_error_response(
+    code: actix_web::http::StatusCode,
+    message: Option<String>,
+) -> HttpResponse {
+    let headline = match code {
+        actix_web::http::StatusCode::NOT_FOUND => "Not found",
+        _ => "Error",
+    };
+
+    let status = match message {
+        Some(message) => format!("{}: {}", code, message),
+        None => format!("{}", code),
+    };
+
+    let html = html! {
+        (DOCTYPE)
+        meta charset="utf-8";
+        html {
+            head {
+                title { "Error" }
+            }
+            body {
+                h1 { (headline) }
+                p { (status) }
+            }
+        }
+    };
+
+    HttpResponse::build(code).body(html.into_string())
+}
+
+fn generate_404() -> HttpResponse {
+    generate_http_error_response(actix_web::http::StatusCode::NOT_FOUND, None)
+}
+
+
 async fn list_entities(vault: web::Data<Arc<vault::Vault>>) -> impl Responder {
     let mut zettels: Vec<(entity::Id, String)> = vault
         .list_entities()
@@ -73,41 +109,6 @@ fn generate_show_zettel(
     };
 
     HttpResponse::Ok().body(html.into_string())
-}
-
-fn generate_http_error_response(
-    code: actix_web::http::StatusCode,
-    message: Option<String>,
-) -> HttpResponse {
-    let headline = match code {
-        actix_web::http::StatusCode::NOT_FOUND => "Not found",
-        _ => "Error",
-    };
-
-    let status = match message {
-        Some(message) => format!("{}: {}", code, message),
-        None => format!("{}", code),
-    };
-
-    let html = html! {
-        (DOCTYPE)
-        meta charset="utf-8";
-        html {
-            head {
-                title { "Error" }
-            }
-            body {
-                h1 { (headline) }
-                p { (status) }
-            }
-        }
-    };
-
-    HttpResponse::build(code).body(html.into_string())
-}
-
-fn generate_404() -> HttpResponse {
-    generate_http_error_response(actix_web::http::StatusCode::NOT_FOUND, None)
 }
 
 fn generate_download_file(file: entity::file::File) -> HttpResponse {
