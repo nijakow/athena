@@ -57,7 +57,7 @@ impl Vault {
         let entity = self.load_entity(id)?;
 
         match entity {
-            entity::Entity::File(file) => file.title(),
+            entity::Entity::File(file) => file.metadata().title(),
             entity::Entity::Zettel(zettel) => zettel.header().title.clone().or_else(|| Some(id.id().to_string())),
         }
     }

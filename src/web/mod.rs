@@ -84,13 +84,15 @@ async fn list_entities(vault: web::Data<Arc<vault::Vault>>) -> impl Responder {
 }
 
 fn generate_show_zettel(
-    _vault: &Arc<vault::Vault>,
+    vault: &Arc<vault::Vault>,
     id: entity::Id,
     zettel: zettel::Zettel,
 ) -> HttpResponse {
     let title = "Zettel";
 
-    let content = zettel.body_as_document().unwrap().as_html();
+    let conversion_context = zettel::document::conversions::html::HtmlConversionContext::new(Arc::clone(vault));
+
+    let content = zettel.body_as_document().unwrap().as_html(&conversion_context);
 
     let html = html! {
         (DOCTYPE)
@@ -112,16 +114,16 @@ fn generate_show_zettel(
 }
 
 fn generate_download_file(file: entity::file::File) -> HttpResponse {
-    let mime = file.mime_type().to_string();
+    let mime = file.metadata().mime_type().to_string();
     let content = file.extract_content();
 
     HttpResponse::Ok().content_type(mime).body(content)
 }
 
 fn generate_show_file(id: entity::Id, file: entity::file::File) -> HttpResponse {
-    let title = file.title().unwrap_or_else(|| "Untitled".to_string());
+    let title = file.metadata().title().unwrap_or_else(|| "Untitled".to_string());
 
-    let file_type = file.file_type();
+    let file_type = file.metadata().file_type();
 
     let mime = file_type.mime_type();
 
@@ -180,6 +182,10 @@ pub async fn edit_zettel(
     let id = entity::Id::with_id(id.into_inner());
     let zettel = vault.load_zettel(&id);
 
+    let vault_ref = vault.get_ref();
+
+    let conversion_context = zettel::document::conversions::html::HtmlConversionContext::new(Arc::clone(vault_ref));
+
     let html = html! {
         (DOCTYPE)
         html {
@@ -191,7 +197,7 @@ pub async fn edit_zettel(
                 form action=(format!("{}", id.as_safe_uri())) method="post" {
                     textarea name="content" {
                         @if let Some(zettel) = zettel {
-                            (zettel.body_as_document().unwrap().as_html())
+                            (zettel.body_as_document().unwrap().as_html(&conversion_context))
                         }
                     }
                     button type="submit" { "Save" }

@@ -1,18 +1,13 @@
 use crate::core::io::resource::Type;
 
-pub struct File {
+pub struct FileMetadata {
     file_type: Type,
     title: Option<String>,
-    content: Vec<u8>,
 }
 
-impl File {
-    pub fn new(file_type: Type, title: Option<String>, content: Vec<u8>) -> Self {
-        Self {
-            file_type,
-            title,
-            content,
-        }
+impl FileMetadata {
+    pub fn new(file_type: Type, title: Option<String>) -> Self {
+        Self { file_type, title }
     }
 
     pub fn file_type(&self) -> Type {
@@ -25,6 +20,25 @@ impl File {
 
     pub fn title(&self) -> Option<String> {
         self.title.clone()
+    }
+}
+
+
+pub struct File {
+    metadata: FileMetadata,
+    content: Vec<u8>,
+}
+
+impl File {
+    pub fn new(file_type: Type, title: Option<String>, content: Vec<u8>) -> Self {
+        Self {
+            metadata: FileMetadata::new(file_type, title),
+            content,
+        }
+    }
+
+    pub fn metadata(&self) -> &FileMetadata {
+        &self.metadata
     }
 
     pub fn content(&self) -> &[u8] {

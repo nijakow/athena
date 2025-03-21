@@ -1,7 +1,22 @@
-use crate::core::entity::zettel::document;
+use crate::core::{entity::{self, zettel::document}, vault};
+
+pub struct HtmlConversionContext {
+    vault: std::sync::Arc<vault::Vault>,
+}
+
+impl HtmlConversionContext {
+    pub fn new(vault: std::sync::Arc<vault::Vault>) -> Self {
+        Self { vault }
+    }
+
+    fn generate_embed(&self, id: &entity::Id) -> String {
+        format!("<embed src=\"{}\"/>", id.as_safe_download_uri())
+    }
+}
+
 
 pub trait AsHtml {
-    fn as_html(&self) -> String;
+    fn as_html(&self, context: &HtmlConversionContext) -> String;
 }
 
 fn convert_style(style: &document::node::Style) -> &'static str {
@@ -14,13 +29,9 @@ fn convert_style(style: &document::node::Style) -> &'static str {
 }
 
 impl AsHtml for document::node::Node {
-    fn as_html(&self) -> String {
+    fn as_html(&self, context: &HtmlConversionContext) -> String {
         use document::node::Node;
         use maud::html;
-
-        fn escape<S: ToString>(text: S) -> String {
-            html_escape::encode_safe(&text.to_string()).into_owned()
-        }
 
         match self {
             Node::Newline => "<br/>".to_string(),
@@ -35,7 +46,7 @@ impl AsHtml for document::node::Node {
             Node::Code(code) => html! { code { (code) } }.into_string(),
             Node::Styled(style, node) => {
                 let tag_name = convert_style(style);
-                let html = node.as_html();
+                let html = node.as_html(context);
 
                 format!("<{}>{}</{}>", tag_name, html, tag_name)
             }
@@ -44,23 +55,20 @@ impl AsHtml for document::node::Node {
                 let caption = &link.caption;
 
                 if link.embed {
-                    format!(
-                        "<embed src=\"{}\"/>",
-                        target.as_safe_download_uri()
-                    )
+                    context.generate_embed(target)
                 } else {
                     format!(
                         "<a href=\"{}\">{}</a>",
                         target.as_safe_uri(),
                         caption
                             .iter()
-                            .map(|node| node.as_html())
+                            .map(|node| node.as_html(context))
                             .collect::<String>()
                     )
                 }
             }
             Node::Grouped(nodes) => {
-                let html = nodes.iter().map(|node| node.as_html()).collect::<String>();
+                let html = nodes.iter().map(|node| node.as_html(context)).collect::<String>();
 
                 html! { (maud::PreEscaped(html)) }.into_string()
             }
@@ -69,12 +77,12 @@ impl AsHtml for document::node::Node {
 }
 
 impl AsHtml for document::block::Heading {
-    fn as_html(&self) -> String {
+    fn as_html(&self, context: &HtmlConversionContext) -> String {
         let tag_name = format!("h{}", self.level);
         let text = self
             .nodes
             .iter()
-            .map(|node| node.as_html())
+            .map(|node| node.as_html(context))
             .collect::<String>();
 
         format!("<{}>{}</{}>", tag_name, text, tag_name)
@@ -82,7 +90,7 @@ impl AsHtml for document::block::Heading {
 }
 
 impl AsHtml for document::block::CodeBlock {
-    fn as_html(&self) -> String {
+    fn as_html(&self, context: &HtmlConversionContext) -> String {
         use maud::html;
 
         let code = &self.code;
@@ -93,7 +101,7 @@ impl AsHtml for document::block::CodeBlock {
 }
 
 impl AsHtml for document::block::callout::Callout {
-    fn as_html(&self) -> String {
+    fn as_html(&self, context: &HtmlConversionContext) -> String {
         use maud::html;
 
         let kind = match self.kind {
@@ -126,7 +134,7 @@ impl AsHtml for document::block::callout::Callout {
         let blocks = self
             .blocks
             .iter()
-            .map(|block| block.as_html())
+            .map(|block| block.as_html(context))
             .collect::<String>();
 
         // The way we turn this into HTML is by using a <div> element, setting the background color
@@ -147,13 +155,13 @@ impl AsHtml for document::block::callout::Callout {
 }
 
 impl AsHtml for document::block::Paragraph {
-    fn as_html(&self) -> String {
+    fn as_html(&self, context: &HtmlConversionContext) -> String {
         use maud::html;
 
         let html = self
             .nodes
             .iter()
-            .map(|node| node.as_html())
+            .map(|node| node.as_html(context))
             .collect::<String>();
 
         html! { p { (maud::PreEscaped(html)) } }.into_string()
@@ -161,24 +169,24 @@ impl AsHtml for document::block::Paragraph {
 }
 
 impl AsHtml for document::block::Block {
-    fn as_html(&self) -> String {
+    fn as_html(&self, context: &HtmlConversionContext) -> String {
         use document::block::Block;
 
         match self {
-            Block::Heading(heading) => heading.as_html(),
+            Block::Heading(heading) => heading.as_html(context),
             Block::Line => "<hr>".to_string(),
-            Block::CodeBlock(codeblock) => codeblock.as_html(),
-            Block::Callout(callout) => callout.as_html(),
-            Block::Paragraph(paragraph) => paragraph.as_html(),
+            Block::CodeBlock(codeblock) => codeblock.as_html(context),
+            Block::Callout(callout) => callout.as_html(context),
+            Block::Paragraph(paragraph) => paragraph.as_html(context),
         }
     }
 }
 
 impl AsHtml for document::Document {
-    fn as_html(&self) -> String {
+    fn as_html(&self, context: &HtmlConversionContext) -> String {
         self.blocks
             .iter()
-            .map(|block| block.as_html())
+            .map(|block| block.as_html(context))
             .collect::<String>()
     }
 }
