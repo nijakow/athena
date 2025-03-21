@@ -43,14 +43,21 @@ impl AsHtml for document::node::Node {
                 let target = &link.target;
                 let caption = &link.caption;
 
-                format!(
-                    "<a href=\"{}\">{}</a>",
-                    target.as_safe_uri(),
-                    caption
-                        .iter()
-                        .map(|node| node.as_html())
-                        .collect::<String>()
-                )
+                if link.embed {
+                    format!(
+                        "<img src=\"{}\"/>",
+                        target.as_safe_download_uri()
+                    )
+                } else {
+                    format!(
+                        "<a href=\"{}\">{}</a>",
+                        target.as_safe_uri(),
+                        caption
+                            .iter()
+                            .map(|node| node.as_html())
+                            .collect::<String>()
+                    )
+                }
             }
             Node::Grouped(nodes) => {
                 let html = nodes.iter().map(|node| node.as_html()).collect::<String>();

@@ -14,6 +14,7 @@ pub enum Style {
 pub struct Reference {
     pub target: entity::Id,
     pub caption: Nodes,
+    pub embed: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]

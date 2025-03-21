@@ -452,10 +452,10 @@ impl MarkdownParser {
         match count_leading_chars(line, '#') {
             0 => None,
             level => {
-                let text = line.chars().skip(level).skip_while(|c| *c == ' ').collect();
+                let text: String = line.chars().skip(level).skip_while(|c| *c == ' ').collect();
                 Some(markdown::Heading(
                     level as u8,
-                    vec![markdown::Node::Text(text)],
+                    ParagraphParser::for_string(text).parse(),
                 ))
             }
         }

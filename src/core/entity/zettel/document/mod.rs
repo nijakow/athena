@@ -34,6 +34,7 @@ impl Document {
                     Box::new(node::Node::Reference(node::Reference {
                         target: crate::core::entity::Id::with_id("b"),
                         caption: vec![node::Node::Text("world".to_string())],
+                        embed: false,
                     })),
                 ),
                 node::Node::Text("!".to_string()),

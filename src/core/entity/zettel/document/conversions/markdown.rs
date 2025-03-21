@@ -32,6 +32,7 @@ fn convert_node(node: &markdown::Node) -> Result<document::node::Node, Conversio
                         Some(title) => convert_nodes(&title)?,
                         None => vec![document::node::Node::Text(zettel.clone())],
                     },
+                    embed: *embed,
                 })),
                 markdown::LinkTarget::Url(_url) => None,
                 markdown::LinkTarget::FreeForm(_) => None,
