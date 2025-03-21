@@ -53,9 +53,12 @@ impl Vault {
     }
 
     pub fn title_of_entity(&self, id: &entity::Id) -> Option<String> {
-        self.load_zettel_header(id)
-            .map(|header| header.title)
-            .flatten()
-            .or_else(|| Some(id.id().to_string()))
+
+        let entity = self.load_entity(id)?;
+
+        match entity {
+            entity::Entity::File(file) => file.title(),
+            entity::Entity::Zettel(zettel) => zettel.header().title.clone().or_else(|| Some(id.id().to_string())),
+        }
     }
 }

@@ -187,10 +187,11 @@ impl Resource {
     }
 
     pub fn read_to_file(&self) -> Result<entity::file::File, std::io::Error> {
+        let title = self.path.file_stem().and_then(|s| s.to_str()).map(|s| s.to_string());
         let content = self.read_to_bytes()?;
         let file_type = self.metadata().resource_type.unwrap_or(Type::PlainText);
 
-        Ok(entity::file::File::new(file_type, content))
+        Ok(entity::file::File::new(file_type, title, content))
     }
 
     pub fn read_to_split_json(&self) -> Result<SplitJson, Box<dyn std::error::Error>> {
