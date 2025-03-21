@@ -124,35 +124,7 @@ fn generate_show_file(id: entity::Id, file: entity::file::File) -> HttpResponse 
 
     let mime = file_type.mime_type();
 
-    let displayed_content_html = match file_type {
-        resource::Type::Document(resource::DocumentType::PlainText) => {
-            let content = std::str::from_utf8(file.content()).unwrap_or("Content not displayed");
-            html! {
-                pre { (content) }
-            }
-        }
-        resource::Type::Document(resource::DocumentType::Pdf) => {
-            // Make sure that the PDF has a certain height, it should not be crushed vertically
-            html! {
-                object class="pdf" data=(id.as_safe_download_uri()) type="application/pdf" width="100%" style="aspect-ratio: 4 / 3" {}
-            }
-        }
-        resource::Type::Image(_) => {
-            html! {
-                img src=(id.as_safe_download_uri()) alt=(title) width="100%" {}
-            }
-        }
-        resource::Type::Audio(_) => {
-            html! {
-                audio controls {
-                    source src=(id.as_safe_download_uri()) type=(mime) {}
-                }
-            }
-        }
-        _ => html! {
-            p { "Content not displayed" }
-        },
-    };
+    let displayed_content_html = crate::util::embedding::embed_file_for_id(&file, &id, &title);
 
     let html = html! {
         (DOCTYPE)
