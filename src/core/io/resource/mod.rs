@@ -117,8 +117,8 @@ pub struct Resource {
 }
 
 impl Resource {
-    pub fn from_path(path: std::path::PathBuf) -> Resource {
-        Resource { path }
+    pub fn from_path(path: std::path::PathBuf) -> Self {
+        Self { path }
     }
 
     pub fn metadata(&self) -> Metadata {
@@ -132,10 +132,17 @@ impl Resource {
         &self.path
     }
 
-    pub fn content_hash(&self) -> Option<crate::util::hashing::Sha256> {
+    pub fn content_hash(&self, cache: &mut ResourceCache) -> Option<crate::util::hashing::Sha256> {
         if self.is_usually_hash_addressable() {
-            let content = self.read_to_bytes().ok()?;
-            Some(crate::util::hashing::Sha256::hash_bytes(&content))
+            if let Some(cached_hash) = cache.get_hash(&self.path) {
+                Some(cached_hash.clone())
+            } else {
+                println!("Calculating hash for {:?}", self.path);
+                let content = self.read_to_bytes().ok()?;
+                let hash = crate::util::hashing::Sha256::hash_bytes(&content);
+                cache.set_hash(self.path.clone(), hash.clone());
+                Some(hash)
+            }
         } else {
             None
         }
@@ -181,5 +188,26 @@ impl Resource {
 
         crate::formats::markdown::parser::parse_document(content)
             .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+    }
+}
+
+pub struct ResourceCache {
+    hashes: std::collections::HashMap<std::path::PathBuf, crate::util::hashing::Sha256>,
+}
+
+impl ResourceCache {
+    pub fn new() -> Self {
+        Self {
+            hashes: std::collections::HashMap::new(),
+        }
+    }
+
+    fn get_hash(&self, path: &std::path::Path) -> Option<&crate::util::hashing::Sha256> {
+        // TODO: Check if the file has been modified since the hash was calculated
+        self.hashes.get(path)
+    }
+
+    fn set_hash(&mut self, path: std::path::PathBuf, hash: crate::util::hashing::Sha256) {
+        self.hashes.insert(path, hash);
     }
 }

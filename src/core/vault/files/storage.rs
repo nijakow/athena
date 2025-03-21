@@ -1,3 +1,5 @@
+use std::{cell::RefCell, sync::RwLock};
+
 use crate::core::{entity, io::resource};
 
 pub struct Flags {
@@ -19,6 +21,7 @@ pub struct Storage {
     pub flags: Flags,
     pub base_path: std::path::PathBuf,
     file_name_cache: std::collections::HashMap<String, std::path::PathBuf>,
+    resource_cache: RwLock<resource::ResourceCache>,
 }
 
 impl Storage {
@@ -34,6 +37,10 @@ impl Storage {
                     let entry = entry.unwrap();
                     let path = entry.path();
 
+                    if path.file_name().unwrap().to_string_lossy().starts_with(".") {
+                        continue;
+                    }
+
                     if path.is_dir() {
                         dirs.push(path);
                     } else if path.is_file() {
@@ -46,10 +53,13 @@ impl Storage {
             files
         };
 
-        Storage {
+        let resource_cache = resource::ResourceCache::new();
+
+        Self {
             flags,
             base_path,
             file_name_cache,
+            resource_cache: RwLock::new(resource_cache),
         }
     }
 
@@ -104,7 +114,7 @@ impl Storage {
                 for resource in self.list_resources() {
                     println!("Checking resource: {:?}", resource.path());
 
-                    if let Some(hash) = resource.content_hash() {
+                    if let Some(hash) = resource.content_hash(&mut *self.resource_cache.write().unwrap()) {
                         if hash == *sha256 {
                             return Some(resource);
                         }
