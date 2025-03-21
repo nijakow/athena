@@ -7,6 +7,12 @@ pub enum ZettelType {
 }
 
 #[derive(Debug, Clone, Copy, enum_iterator::Sequence)]
+pub enum DocumentType {
+    PlainText,
+    Pdf,
+}
+
+#[derive(Debug, Clone, Copy, enum_iterator::Sequence)]
 pub enum ImageType {
     Png,
     Jpg,
@@ -17,43 +23,39 @@ pub enum ImageType {
 }
 
 #[derive(Debug, Clone, Copy, enum_iterator::Sequence)]
+pub enum VideoType {
+    Mp4,
+    Webm,
+    Ogg,
+}
+
+#[derive(Debug, Clone, Copy, enum_iterator::Sequence)]
 pub enum Type {
     Zettel(ZettelType),
-    PlainText,
+    Document(DocumentType),
     Image(ImageType),
-    Pdf,
+    Video(VideoType),
+    Unknown,
 }
 
 impl Type {
-    pub fn from_extension(extension: &str) -> Option<Self> {
-        match extension.to_lowercase().as_str() {
-            "zson" => Some(Type::Zettel(ZettelType::Athena)),
-            "md" => Some(Type::Zettel(ZettelType::Obsidian)),
-            "txt" => Some(Type::PlainText),
-            "png" => Some(Type::Image(ImageType::Png)),
-            "jpg" => Some(Type::Image(ImageType::Jpg)),
-            "jpeg" => Some(Type::Image(ImageType::Jpg)),
-            "webp" => Some(Type::Image(ImageType::Webp)),
-            "gif" => Some(Type::Image(ImageType::Gif)),
-            "svg" => Some(Type::Image(ImageType::Svg)),
-            "bmp" => Some(Type::Image(ImageType::Bmp)),
-            "pdf" => Some(Type::Pdf),
-            _ => None,
-        }
-    }
 
     pub fn to_extensions(&self) -> Vec<&'static str> {
         match self {
             Type::Zettel(ZettelType::Athena) => vec!["zson"],
             Type::Zettel(ZettelType::Obsidian) => vec!["md"],
-            Type::PlainText => vec!["txt"],
+            Type::Document(DocumentType::PlainText) => vec!["txt"],
+            Type::Document(DocumentType::Pdf) => vec!["pdf"],
             Type::Image(ImageType::Png) => vec!["png"],
             Type::Image(ImageType::Jpg) => vec!["jpg", "jpeg"],
             Type::Image(ImageType::Webp) => vec!["webp"],
             Type::Image(ImageType::Gif) => vec!["gif"],
             Type::Image(ImageType::Svg) => vec!["svg"],
             Type::Image(ImageType::Bmp) => vec!["bmp"],
-            Type::Pdf => vec!["pdf"],
+            Type::Video(VideoType::Mp4) => vec!["mp4"],
+            Type::Video(VideoType::Webm) => vec!["webm"],
+            Type::Video(VideoType::Ogg) => vec!["ogg"],
+            Type::Unknown => vec![],
         }
     }
 
@@ -61,18 +63,30 @@ impl Type {
         self.to_extensions().first().copied()
     }
 
+    pub fn from_extension(extension: &str) -> Option<Self> {
+        Self::map_extensions()
+            .iter()
+            .find(|(_, e)| e == &extension)
+            .map(|(t, _)| t)
+            .copied()
+    }
+
     pub fn mime_type(&self) -> Option<&'static str> {
         Some(match self {
             Type::Zettel(ZettelType::Athena) => "application/json",
             Type::Zettel(ZettelType::Obsidian) => "text/markdown",
-            Type::PlainText => "text/plain",
+            Type::Document(DocumentType::PlainText) => "text/plain",
+            Type::Document(DocumentType::Pdf) => "application/pdf",
             Type::Image(ImageType::Png) => "image/png",
             Type::Image(ImageType::Jpg) => "image/jpeg",
             Type::Image(ImageType::Webp) => "image/webp",
             Type::Image(ImageType::Gif) => "image/gif",
             Type::Image(ImageType::Svg) => "image/svg+xml",
             Type::Image(ImageType::Bmp) => "image/bmp",
-            Type::Pdf => "application/pdf",
+            Type::Video(VideoType::Mp4) => "video/mp4",
+            Type::Video(VideoType::Webm) => "video/webm",
+            Type::Video(VideoType::Ogg) => "video/ogg",
+            Type::Unknown => "application/octet-stream",
         })
     }
 
@@ -87,11 +101,20 @@ impl Type {
         enum_iterator::all::<Self>().collect()
     }
 
-    pub fn all_extensions() -> Vec<&'static str> {
+    pub fn map_extensions() -> Vec<(Self, &'static str)> {
         Self::all()
             .iter()
-            .flat_map(|t| t.to_extensions())
+            .flat_map(|t| {
+                let extensions = t.to_extensions();
+                extensions.into_iter().map(move |e| (*t, e))
+            })
+            .collect::<Vec<_>>()
+            .into_iter()
             .collect()
+    }
+
+    pub fn all_extensions() -> Vec<&'static str> {
+        Self::all().iter().flat_map(|t| t.to_extensions()).collect()
     }
 }
 
@@ -187,9 +210,13 @@ impl Resource {
     }
 
     pub fn read_to_file(&self) -> Result<entity::file::File, std::io::Error> {
-        let title = self.path.file_stem().and_then(|s| s.to_str()).map(|s| s.to_string());
+        let title = self
+            .path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .map(|s| s.to_string());
         let content = self.read_to_bytes()?;
-        let file_type = self.metadata().resource_type.unwrap_or(Type::PlainText);
+        let file_type = self.metadata().resource_type.unwrap_or(Type::Unknown);
 
         Ok(entity::file::File::new(file_type, title, content))
     }
