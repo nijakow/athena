@@ -13,7 +13,7 @@ pub enum Style {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct Reference {
     pub target: entity::Id,
-    pub caption: String,
+    pub caption: Nodes,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]

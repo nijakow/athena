@@ -33,7 +33,7 @@ impl Document {
                     node::Style::Italic,
                     Box::new(node::Node::Reference(node::Reference {
                         target: crate::core::entity::Id::with_id("b"),
-                        caption: "world".to_string(),
+                        caption: vec![node::Node::Text("world".to_string())],
                     })),
                 ),
                 node::Node::Text("!".to_string()),

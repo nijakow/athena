@@ -1,3 +1,4 @@
+use crate::core::entity;
 use crate::core::entity::zettel::document;
 use crate::formats::markdown;
 
@@ -21,6 +22,26 @@ fn convert_node(node: &markdown::Node) -> Result<document::node::Node, Conversio
         markdown::Node::Bold(nodes) => styled(nodes, document::node::Style::Bold),
         markdown::Node::Italic(nodes) => styled(nodes, document::node::Style::Italic),
         markdown::Node::Tag(tag) => Ok(document::node::Node::Tag(tag.clone())),
+        markdown::Node::Link { embed, link } => {
+            let target = &link.target;
+
+            let result = match target {
+                markdown::LinkTarget::Zettel(zettel) => Some(document::node::Node::Reference(document::node::Reference {
+                    target: entity::Id::from_string(zettel),
+                    caption: match &link.title {
+                        Some(title) => convert_nodes(&title)?,
+                        None => vec![document::node::Node::Text(zettel.clone())],
+                    },
+                })),
+                markdown::LinkTarget::Url(_url) => None,
+                markdown::LinkTarget::FreeForm(_) => None,
+            };
+
+            match result {
+                Some(node) => Ok(node),
+                None => Ok(document::node::Node::Text("TODO".to_string())),
+            }
+        }
         _ => Ok(document::node::Node::Text("TODO".to_string())),
     }
 }

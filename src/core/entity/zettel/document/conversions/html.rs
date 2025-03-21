@@ -32,9 +32,7 @@ impl AsHtml for document::node::Node {
                 let link = format!("/tags/{}", tag);
                 html! { a href=(link) { code { (format!("#{}", tag)) } } }.into_string()
             }
-            Node::Code(code) => {
-                html! { code { (code) } }.into_string()
-            }
+            Node::Code(code) => html! { code { (code) } }.into_string(),
             Node::Styled(style, node) => {
                 let tag_name = convert_style(style);
                 let html = node.as_html();
@@ -45,7 +43,14 @@ impl AsHtml for document::node::Node {
                 let target = &link.target;
                 let caption = &link.caption;
 
-                format!("<a href=\"{}\">{}</a>", target.as_safe_uri(), caption)
+                format!(
+                    "<a href=\"{}\">{}</a>",
+                    target.as_safe_uri(),
+                    caption
+                        .iter()
+                        .map(|node| node.as_html())
+                        .collect::<String>()
+                )
             }
             Node::Grouped(nodes) => {
                 let html = nodes.iter().map(|node| node.as_html()).collect::<String>();
@@ -59,14 +64,13 @@ impl AsHtml for document::node::Node {
 impl AsHtml for document::block::Heading {
     fn as_html(&self) -> String {
         let tag_name = format!("h{}", self.level);
-        let text = self.nodes.iter().map(|node| node.as_html()).collect::<String>();
+        let text = self
+            .nodes
+            .iter()
+            .map(|node| node.as_html())
+            .collect::<String>();
 
-        format!(
-            "<{}>{}</{}>",
-            tag_name,
-            text,
-            tag_name
-        )
+        format!("<{}>{}</{}>", tag_name, text, tag_name)
     }
 }
 
