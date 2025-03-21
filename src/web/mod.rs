@@ -202,6 +202,20 @@ async fn process_entity(
     }
 }
 
+async fn download_entity(vault: web::Data<Arc<vault::Vault>>, id: web::Path<String>) -> HttpResponse {
+    let id = entity::Id::with_id(id.into_inner());
+
+    let entity = vault.load_entity(&id);
+
+    match entity {
+        Some(entity::Entity::File(file)) => generate_download_file(file),
+        _ => generate_http_error_response(
+            actix_web::http::StatusCode::NOT_IMPLEMENTED,
+            Some("Download for this type not implemented yet!".to_string()),
+        ),
+    }
+}
+
 pub async fn go(vault: vault::Vault) -> std::io::Result<()> {
     let vault_data = web::Data::new(Arc::new(vault));
 
@@ -211,6 +225,7 @@ pub async fn go(vault: vault::Vault) -> std::io::Result<()> {
             .route("/", web::get().to(list_entities))
             .route("/entity/{id}", web::get().to(process_entity))
             .route("/entity/{id}", web::post().to(post_entity))
+            .route("/raw/{id}", web::get().to(download_entity))
     })
     .bind("127.0.0.1:8080")?
     .run()
