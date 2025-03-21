@@ -76,6 +76,13 @@ pub fn embed_file_for_id<S: ToString>(
                 }
             }
         }
+        resource::Type::Video(_) => {
+            maud::html! {
+                video controls width="100%" {
+                    source src=(uri) type=(mime) {}
+                }
+            }
+        }
         _ => content_not_displayed(),
     }
 }
