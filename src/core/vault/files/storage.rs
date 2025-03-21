@@ -1,4 +1,4 @@
-use std::{cell::RefCell, sync::RwLock};
+use std::sync::RwLock;
 
 use crate::core::{entity, io::resource};
 
@@ -31,8 +31,6 @@ impl Storage {
             let mut dirs = vec![base_path.clone()];
 
             while let Some(dir) = dirs.pop() {
-                println!("Checking directory: {:?}", dir);
-
                 for entry in std::fs::read_dir(&dir).unwrap() {
                     let entry = entry.unwrap();
                     let path = entry.path();
@@ -82,7 +80,7 @@ impl Storage {
     pub fn list_entities(&self) -> Vec<entity::Id> {
         self.list_resources()
             .iter()
-            .map(|resource| entity::Id::for_resource(resource))
+            .map(|resource| entity::Id::for_resource(resource, &mut *self.resource_cache.write().unwrap()))
             .collect()
     }
 
@@ -112,8 +110,6 @@ impl Storage {
         match id {
             entity::Id::Sha256(sha256) => {
                 for resource in self.list_resources() {
-                    println!("Checking resource: {:?}", resource.path());
-
                     if let Some(hash) = resource.content_hash(&mut *self.resource_cache.write().unwrap()) {
                         if hash == *sha256 {
                             return Some(resource);

@@ -10,6 +10,10 @@ pub enum ZettelType {
 pub enum ImageType {
     Png,
     Jpg,
+    Webp,
+    Gif,
+    Svg,
+    Bmp,
 }
 
 #[derive(Debug, Clone, Copy, enum_iterator::Sequence)]
@@ -29,20 +33,32 @@ impl Type {
             "png" => Some(Type::Image(ImageType::Png)),
             "jpg" => Some(Type::Image(ImageType::Jpg)),
             "jpeg" => Some(Type::Image(ImageType::Jpg)),
+            "webp" => Some(Type::Image(ImageType::Webp)),
+            "gif" => Some(Type::Image(ImageType::Gif)),
+            "svg" => Some(Type::Image(ImageType::Svg)),
+            "bmp" => Some(Type::Image(ImageType::Bmp)),
             "pdf" => Some(Type::Pdf),
             _ => None,
         }
     }
 
+    pub fn to_extensions(&self) -> Vec<&'static str> {
+        match self {
+            Type::Zettel(ZettelType::Athena) => vec!["zson"],
+            Type::Zettel(ZettelType::Obsidian) => vec!["md"],
+            Type::PlainText => vec!["txt"],
+            Type::Image(ImageType::Png) => vec!["png"],
+            Type::Image(ImageType::Jpg) => vec!["jpg", "jpeg"],
+            Type::Image(ImageType::Webp) => vec!["webp"],
+            Type::Image(ImageType::Gif) => vec!["gif"],
+            Type::Image(ImageType::Svg) => vec!["svg"],
+            Type::Image(ImageType::Bmp) => vec!["bmp"],
+            Type::Pdf => vec!["pdf"],
+        }
+    }
+
     pub fn to_extension(&self) -> Option<&'static str> {
-        Some(match self {
-            Type::Zettel(ZettelType::Athena) => "zson",
-            Type::Zettel(ZettelType::Obsidian) => "md",
-            Type::PlainText => "txt",
-            Type::Image(ImageType::Png) => "png",
-            Type::Image(ImageType::Jpg) => "jpg",
-            Type::Pdf => "pdf",
-        })
+        self.to_extensions().first().copied()
     }
 
     pub fn mime_type(&self) -> Option<&'static str> {
@@ -52,6 +68,10 @@ impl Type {
             Type::PlainText => "text/plain",
             Type::Image(ImageType::Png) => "image/png",
             Type::Image(ImageType::Jpg) => "image/jpeg",
+            Type::Image(ImageType::Webp) => "image/webp",
+            Type::Image(ImageType::Gif) => "image/gif",
+            Type::Image(ImageType::Svg) => "image/svg+xml",
+            Type::Image(ImageType::Bmp) => "image/bmp",
             Type::Pdf => "application/pdf",
         })
     }
@@ -70,7 +90,7 @@ impl Type {
     pub fn all_extensions() -> Vec<&'static str> {
         Self::all()
             .iter()
-            .map(|t| t.to_extension().unwrap())
+            .flat_map(|t| t.to_extensions())
             .collect()
     }
 }

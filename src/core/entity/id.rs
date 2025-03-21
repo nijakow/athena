@@ -37,10 +37,9 @@ impl Id {
         Id::from_string(id)
     }
 
-    pub(crate) fn for_resource(resource: &resource::Resource) -> Id {
-        if resource.is_usually_hash_addressable() {
-            let content = resource.read_to_bytes().unwrap();
-            Id::from_sha256(Sha256::hash_bytes(&content))
+    pub(crate) fn for_resource(resource: &resource::Resource, cache: &mut resource::ResourceCache) -> Id {
+        if let Some(hash) = resource.content_hash(cache) {
+            Id::from_sha256(hash.clone())
         } else {
             let file_name_without_extension = resource
                 .path()
