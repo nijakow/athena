@@ -170,7 +170,14 @@ impl AsHtml for document::block::bullet_point::BulletPoint {
             .map(|node| node.as_html(context))
             .collect::<String>();
 
-        html! { li { (maud::PreEscaped(html)) } }.into_string()
+        // If the bullet point's task info is Some, we need to render an unclickable checkbox
+        let checkbox = if self.task_info.is_some() {
+            "<input type=\"checkbox\" disabled checked />"
+        } else {
+            ""
+        };
+
+        html! { li { (maud::PreEscaped(checkbox)) (maud::PreEscaped(html)) } }.into_string()
     }
 }
 

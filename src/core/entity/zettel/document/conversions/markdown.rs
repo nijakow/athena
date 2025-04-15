@@ -91,9 +91,13 @@ fn convert_block(block: &markdown::Block) -> Result<document::block::Block, Conv
         markdown::Block::BulletPoint(bullet_point) => {
             // TODO
             Ok(document::block::Block::BulletPoint(
-                document::block::bullet_point::BulletPoint::new(
-                    convert_nodes(&bullet_point.1)?
-                )
+                document::block::bullet_point::BulletPoint {
+                    task_info: match bullet_point.0 { // TODO!
+                        Some(_) => Some(document::block::bullet_point::TaskInfo {}),
+                        None => None,
+                    },
+                    nodes: convert_nodes(&bullet_point.1)?
+                }
             ))
         }
         markdown::Block::Nodes(nodes) => Ok(document::block::Block::Paragraph(

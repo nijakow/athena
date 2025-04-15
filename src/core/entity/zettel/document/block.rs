@@ -61,14 +61,14 @@ pub mod bullet_point {
     use super::super::Nodes;
 
     #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-    pub struct BulletPoint {
-        pub nodes: Nodes,
+    pub struct TaskInfo {
+
     }
 
-    impl BulletPoint {
-        pub fn new(nodes: Nodes) -> BulletPoint {
-            BulletPoint { nodes }
-        }
+    #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+    pub struct BulletPoint {
+        pub task_info: Option<TaskInfo>,
+        pub nodes: Nodes,
     }
 }
 
