@@ -117,6 +117,12 @@ fn generate_download_resource(resource: resource::Resource) -> HttpResponse {
     let mime = resource.metadata().resource_type.map(|rt| rt.mime_type()).unwrap_or_else(|| "application/octet-stream");
     let content = resource.read_to_bytes().unwrap();
 
+    let mime = if mime == "text/plain" || mime == "text/markdown" {
+        format!("text/plain; charset=utf-8")
+    } else {
+        mime.to_string()
+    };
+
     HttpResponse::Ok().content_type(mime).body(content)
 }
 
