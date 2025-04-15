@@ -88,19 +88,19 @@ fn convert_block(block: &markdown::Block) -> Result<document::block::Block, Conv
                 convert_blocks(callout)?,
             ),
         )),
+        markdown::Block::BulletPoint(bullet_point) => {
+            // TODO
+            Ok(document::block::Block::BulletPoint(
+                document::block::bullet_point::BulletPoint::new(
+                    convert_nodes(&bullet_point.1)?
+                )
+            ))
+        }
         markdown::Block::Nodes(nodes) => Ok(document::block::Block::Paragraph(
             document::block::Paragraph {
                 nodes: convert_nodes(nodes)?,
             },
-        )),
-        markdown::Block::BulletPoint(bullet_point) => {
-            // TODO
-            Ok(document::block::Block::Paragraph(
-                document::block::Paragraph {
-                    nodes: convert_nodes(&bullet_point.1)?,
-                },
-            ))
-        }
+        ))
     }
 }
 

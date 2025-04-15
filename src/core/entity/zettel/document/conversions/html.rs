@@ -160,6 +160,20 @@ impl AsHtml for document::block::callout::Callout {
     }
 }
 
+impl AsHtml for document::block::bullet_point::BulletPoint {
+    fn as_html(&self, context: &HtmlConversionContext) -> String {
+        use maud::html;
+
+        let html = self
+            .nodes
+            .iter()
+            .map(|node| node.as_html(context))
+            .collect::<String>();
+
+        html! { li { (maud::PreEscaped(html)) } }.into_string()
+    }
+}
+
 impl AsHtml for document::block::Paragraph {
     fn as_html(&self, context: &HtmlConversionContext) -> String {
         use maud::html;
@@ -183,6 +197,7 @@ impl AsHtml for document::block::Block {
             Block::Line => "<hr>".to_string(),
             Block::CodeBlock(codeblock) => codeblock.as_html(context),
             Block::Callout(callout) => callout.as_html(context),
+            Block::BulletPoint(bullet) => bullet.as_html(context),
             Block::Paragraph(paragraph) => paragraph.as_html(context),
         }
     }

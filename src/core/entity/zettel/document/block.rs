@@ -57,6 +57,21 @@ pub mod callout {
     }
 }
 
+pub mod bullet_point {
+    use super::super::Nodes;
+
+    #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+    pub struct BulletPoint {
+        pub nodes: Nodes,
+    }
+
+    impl BulletPoint {
+        pub fn new(nodes: Nodes) -> BulletPoint {
+            BulletPoint { nodes }
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct Paragraph {
     pub nodes: super::Nodes,
@@ -68,5 +83,6 @@ pub enum Block {
     Line,
     CodeBlock(CodeBlock),
     Callout(callout::Callout),
+    BulletPoint(bullet_point::BulletPoint),
     Paragraph(Paragraph),
 }

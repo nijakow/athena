@@ -567,6 +567,14 @@ impl MarkdownParser {
                     kind,
                     lines,
                 }));
+            } else if line.starts_with(" - ") || line.starts_with(" * ") {
+                if !current_block.is_empty() {
+                    pre_parsed.push(PreParsed::Unparsed(Box::new(current_block)));
+                    current_block = Vec::new();
+                }
+                pre_parsed.push(PreParsed::Parsed(Box::new(markdown::Block::BulletPoint(
+                    self.parse_bullet_point(line).unwrap(),
+                ))));
             } else if let Some(block) = self.try_parse_line(line) {
                 if !current_block.is_empty() {
                     pre_parsed.push(PreParsed::Unparsed(Box::new(current_block)));
