@@ -60,17 +60,40 @@ impl AsHtml for document::node::Node {
                 let target = &link.target;
                 let caption = &link.caption;
 
-                if link.embed {
-                    context.generate_embed(target).into_string()
-                } else {
-                    format!(
-                        "<a href=\"{}\">{}</a>",
-                        target.as_safe_uri(),
-                        caption
+                match target {
+                    document::node::reference::ReferenceTarget::Entity(target_id) => {
+                        if link.embed {
+                            context.generate_embed(target_id).into_string()
+                        } else {
+                            // TODO: Escape the text?
+                            format!(
+                                "<a href=\"{}\">{}</a>",
+                                target_id.as_safe_uri(),
+                                caption
+                                    .iter()
+                                    .map(|node| node.as_html(context))
+                                    .collect::<String>()
+                            )
+                        }
+                    }
+                    document::node::reference::ReferenceTarget::Url(url) => {
+                        let url = url.to_string();
+                        let caption = caption
                             .iter()
                             .map(|node| node.as_html(context))
-                            .collect::<String>()
-                    )
+                            .collect::<String>();
+
+                        // TODO: Escape the text?
+                        format!(
+                            "<a href=\"{}\">{}</a>",
+                            url,
+                            if caption.is_empty() {
+                                url.to_string()
+                            } else {
+                                caption
+                            }
+                        )
+                    }
                 }
             }
             Node::Grouped(nodes) => {
@@ -96,7 +119,7 @@ impl AsHtml for document::block::Heading {
 }
 
 impl AsHtml for document::block::CodeBlock {
-    fn as_html(&self, context: &HtmlConversionContext) -> String {
+    fn as_html(&self, _context: &HtmlConversionContext) -> String {
         use maud::html;
 
         let code = &self.code;
@@ -109,15 +132,6 @@ impl AsHtml for document::block::CodeBlock {
 impl AsHtml for document::block::callout::Callout {
     fn as_html(&self, context: &HtmlConversionContext) -> String {
         use maud::html;
-
-        let kind = match self.kind {
-            document::block::callout::Kind::Basic => "basic",
-            document::block::callout::Kind::Quote => "quote",
-            document::block::callout::Kind::Note => "note",
-            document::block::callout::Kind::Warning => "warning",
-            document::block::callout::Kind::Info => "info",
-            document::block::callout::Kind::Error => "error",
-        };
 
         // Use a different background color hue for each kind of callout (use pastel colors, hardcoded as hex codes)
         let (background, border) = match self.kind {

@@ -1,4 +1,3 @@
-use crate::core::entity;
 
 use super::Nodes;
 
@@ -10,20 +9,31 @@ pub enum Style {
     Strikethrough,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-pub struct Reference {
-    pub target: entity::Id,
-    pub caption: Nodes,
-    pub embed: bool,
+pub mod reference {
+    use crate::core::entity;
+    use super::Nodes;
+
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+    pub enum ReferenceTarget {
+        Entity(entity::Id),
+        Url(url::Url),
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+    pub struct Reference {
+        pub target: ReferenceTarget,
+        pub caption: Nodes,
+        pub embed: bool,
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Node {
     Newline,
     Text(String),
     Tag(String),
     Code(String),
     Styled(Style, Box<Node>),
-    Reference(Reference),
+    Reference(reference::Reference),
     Grouped(Nodes),
 }

@@ -11,12 +11,6 @@ impl Header {
     fn new(title: Option<String>) -> Self {
         Header { title }
     }
-
-    pub(crate) fn from_json(json: &serde_json::Value) -> Result<Header, ()> {
-        let title = json.get("title").and_then(|v| v.as_str()).map(|s| s.to_string());
-
-        Ok(Header::new(title))
-    }
 }
 
 pub enum Body {
@@ -25,9 +19,6 @@ pub enum Body {
 }
 
 impl Body {
-    pub(crate) fn from_json(json: &serde_json::Value) -> Result<Body, ()> {
-        Ok(Body::Document(Box::new(document::conversions::json::json_to_document(&json)?)))
-    }
 
     pub(crate) fn from_obsidian_markdown(markdown: &crate::formats::markdown::Document) -> Result<Body, ()> {
         Ok(Body::Document(Box::new(document::conversions::markdown::markdown_to_document(&markdown)?)))
@@ -50,13 +41,6 @@ pub struct Zettel {
 impl Zettel {
     fn new(header: Header, body: Body) -> Self {
         Zettel { header, body }
-    }
-
-    pub(crate) fn from_split_json(split_json: &SplitJson) -> Result<Zettel, ()> {
-        let body = Body::from_json(&split_json.body)?;
-        let header = Header::from_json(&split_json.header)?;
-
-        Ok(Zettel::new(header, body))
     }
 
     pub(crate) fn from_obsidian_markdown(markdown: &crate::formats::markdown::Document) -> Result<Zettel, ()> {

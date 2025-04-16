@@ -8,7 +8,7 @@ pub mod node;
 pub type Blocks = Vec<block::Block>;
 pub type Nodes = Vec<node::Node>;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Document {
     blocks: Blocks,
 }
@@ -31,8 +31,8 @@ impl Document {
                 node::Node::Text("Goodbye, ".to_string()),
                 node::Node::Styled(
                     node::Style::Italic,
-                    Box::new(node::Node::Reference(node::Reference {
-                        target: crate::core::entity::Id::with_id("b"),
+                    Box::new(node::Node::Reference(node::reference::Reference {
+                        target: node::reference::ReferenceTarget::Entity(crate::core::entity::Id::with_id("b")),
                         caption: vec![node::Node::Text("world".to_string())],
                         embed: false,
                     })),

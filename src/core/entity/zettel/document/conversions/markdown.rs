@@ -26,15 +26,22 @@ fn convert_node(node: &markdown::Node) -> Result<document::node::Node, Conversio
             let target = &link.target;
 
             let result = match target {
-                markdown::LinkTarget::Zettel(zettel) => Some(document::node::Node::Reference(document::node::Reference {
-                    target: entity::Id::from_string(zettel),
+                markdown::LinkTarget::Zettel(zettel) => Some(document::node::Node::Reference(document::node::reference::Reference {
+                    target: document::node::reference::ReferenceTarget::Entity(entity::Id::from_string(zettel)),
                     caption: match &link.title {
                         Some(title) => convert_nodes(&title)?,
                         None => vec![document::node::Node::Text(zettel.clone())],
                     },
                     embed: *embed,
                 })),
-                markdown::LinkTarget::Url(_url) => None,
+                markdown::LinkTarget::Url(url) => Some(document::node::Node::Reference(document::node::reference::Reference {
+                    target: document::node::reference::ReferenceTarget::Url(url.clone()),
+                    caption: match &link.title {
+                        Some(title) => convert_nodes(&title)?,
+                        None => vec![document::node::Node::Text(url.to_string())],
+                    },
+                    embed: *embed,
+                })),
                 markdown::LinkTarget::FreeForm(_) => None,
             };
 
@@ -43,7 +50,6 @@ fn convert_node(node: &markdown::Node) -> Result<document::node::Node, Conversio
                 None => Ok(document::node::Node::Text("TODO".to_string())),
             }
         }
-        _ => Ok(document::node::Node::Text("TODO".to_string())),
     }
 }
 

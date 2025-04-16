@@ -1,5 +1,5 @@
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Heading {
     pub level: u8,
     pub nodes: super::Nodes,
@@ -11,7 +11,7 @@ impl Heading {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CodeBlock {
     pub language: Option<String>,
     pub code: String,
@@ -21,7 +21,7 @@ pub mod callout {
     use crate::core::entity::zettel::document::Blocks;
 
 
-    #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub enum Kind {
         Basic,
         Quote,
@@ -44,7 +44,7 @@ pub mod callout {
         }
     }
 
-    #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct Callout {
         pub kind: Kind,
         pub blocks: Blocks,
@@ -60,24 +60,24 @@ pub mod callout {
 pub mod bullet_point {
     use super::super::Nodes;
 
-    #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct TaskInfo {
 
     }
 
-    #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct BulletPoint {
         pub task_info: Option<TaskInfo>,
         pub nodes: Nodes,
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Paragraph {
     pub nodes: super::Nodes,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Block {
     Heading(Heading),
     Line,

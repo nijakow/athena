@@ -19,12 +19,6 @@ impl Entity {
         let metadata = resource.metadata();
 
         match metadata.resource_type {
-            Some(resource::Type::Zettel(resource::ZettelType::Athena)) => {
-                let split_json = resource.read_to_split_json()?;
-                let zettel = zettel::Zettel::from_split_json(&split_json).map_err(|_| "Failed to parse Zettel")?;
-
-                Ok(Entity::Zettel(zettel))
-            }
             Some(resource::Type::Zettel(resource::ZettelType::Obsidian)) => {
                 let markdown = resource.read_to_obsidian_markdown()?;
                 let zettel = zettel::Zettel::from_obsidian_markdown(&markdown).map_err(|_| "Failed to parse Zettel")?;
