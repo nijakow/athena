@@ -1,4 +1,7 @@
-use crate::core::{entity::{self, zettel::document}, vault};
+use crate::core::{
+    entity::{self, zettel::document},
+    vault,
+};
 
 pub struct HtmlConversionContext {
     vault: std::sync::Arc<vault::Vault>,
@@ -19,7 +22,6 @@ impl HtmlConversionContext {
         }
     }
 }
-
 
 pub trait AsHtml {
     fn as_html(&self, context: &HtmlConversionContext) -> String;
@@ -83,22 +85,35 @@ impl AsHtml for document::node::Node {
                             .map(|node| node.as_html(context))
                             .collect::<String>();
 
-                        // TODO: Escape the text?
-                        // Also, mark the link as external by overriding the background-image style
-                        format!(
-                            "<a href=\"{}\" class=\"external\">{}</a>",
-                            url,
-                            if caption.is_empty() {
-                                url.to_string()
-                            } else {
-                                caption
+                        let caption = if caption.is_empty() {
+                            html! { (url.to_string()) }.into_string()
+                        } else {
+                            caption
+                        };
+
+                        if link.embed {
+                            html! {
+                                iframe src=(url) {
+                                    (maud::PreEscaped(caption))
+                                }
                             }
-                        )
+                            .into_string()
+                        } else {
+                            html! {
+                                a href=(url) class="external" {
+                                    (maud::PreEscaped(caption))
+                                }
+                            }
+                            .into_string()
+                        }
                     }
                 }
             }
             Node::Grouped(nodes) => {
-                let html = nodes.iter().map(|node| node.as_html(context)).collect::<String>();
+                let html = nodes
+                    .iter()
+                    .map(|node| node.as_html(context))
+                    .collect::<String>();
 
                 html! { (maud::PreEscaped(html)) }.into_string()
             }
