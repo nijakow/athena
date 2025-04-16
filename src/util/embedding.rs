@@ -25,6 +25,37 @@ fn decorate_with_link_button<S: ToString>(
     }
 }
 
+pub fn generate_embed_for_url(url: &url::Url) -> Option<maud::PreEscaped<String>> {
+    let guessed_type = resource::Type::from_url(url)?;
+    let mime = guessed_type.mime_type().to_string();
+    let uri = url;
+
+    match guessed_type {
+        resource::Type::Image(_) => Some(maud::html! {
+            img src=(uri) width="100%" {}
+        }),
+        resource::Type::Audio(_) => Some(maud::html! {
+            audio controls {
+                source src=(uri) type=(mime) {}
+            }
+        }),
+        resource::Type::Video(_) => Some(maud::html! {
+            video controls width="100%" {
+                source src=(uri) type=(mime) {}
+            }
+        }),
+        _ => None,
+    }
+}
+
+pub fn generate_embed_for_url_or_not_displayed(url: &url::Url) -> maud::PreEscaped<String> {
+    if let Some(embed) = generate_embed_for_url(&url) {
+        embed
+    } else {
+        content_not_displayed()
+    }
+}
+
 pub fn embed_file_for_id<S: ToString>(
     file: &entity::file::File,
     id: &entity::Id,
@@ -55,7 +86,7 @@ pub fn embed_file_for_id<S: ToString>(
                 // Keep the link to the original URI in the tag, so that the PDF can be opened in a new tab
                 object class="pdf" data=(id.as_safe_download_uri()) type="application/pdf" width="100%" style="aspect-ratio: 4 / 3" {}
             };
-            
+
             if download {
                 content
             } else {

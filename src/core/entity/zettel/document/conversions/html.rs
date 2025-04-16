@@ -79,7 +79,6 @@ impl AsHtml for document::node::Node {
                         }
                     }
                     document::node::reference::ReferenceTarget::Url(url) => {
-                        let url = url.to_string();
                         let caption = caption
                             .iter()
                             .map(|node| node.as_html(context))
@@ -92,12 +91,7 @@ impl AsHtml for document::node::Node {
                         };
 
                         if link.embed {
-                            html! {
-                                iframe src=(url) {
-                                    (maud::PreEscaped(caption))
-                                }
-                            }
-                            .into_string()
+                            crate::util::embedding::generate_embed_for_url_or_not_displayed(url).into_string()
                         } else {
                             html! {
                                 a href=(url) class="external" {

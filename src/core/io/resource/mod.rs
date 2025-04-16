@@ -48,6 +48,15 @@ impl Type {
             .copied()
     }
 
+    pub fn from_url(url: &url::Url) -> Option<Self> {
+        let path = url.path();
+        let extension = std::path::Path::new(path)
+            .extension()
+            .and_then(|e| e.to_str());
+
+        Self::from_extension(extension?)
+    }
+
     pub fn mime_type(&self) -> &'static str {
         match self {
             Type::Zettel(types::ZettelType::Athena) => "application/json",
