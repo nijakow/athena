@@ -21,19 +21,48 @@ fn generate_metadata_box(header: &zettel::Header) -> maud::PreEscaped<String> {
     match yaml {
         Some(yaml) => {
             fn yaml_to_table(yaml: &yaml_rust2::Yaml) -> maud::Markup {
+                use yaml_rust2::Yaml;
+
+                fn render_yaml_value(value: &Yaml) -> maud::Markup {
+                    match value {
+                        Yaml::String(s) => maud::html! {
+                            span { (s) }
+                        },
+                        Yaml::Array(arr) => maud::html! {
+                            ul {
+                                @for item in arr {
+                                    li { (render_yaml_value(item)) }
+                                }
+                            }
+                        },
+                        Yaml::Hash(hash) => yaml_to_table(value),
+                        Yaml::Integer(i) => maud::html! {
+                            span { (i) }
+                        },
+                        Yaml::Real(r) => maud::html! {
+                            span { (r) }
+                        },
+                        Yaml::Boolean(b) => maud::html! {
+                            span { (b) }
+                        },
+                        Yaml::Null => maud::html! {
+                            span { "null" }
+                        },
+                        _ => maud::html! {
+                            span { "Unsupported type" }
+                        },
+                    }
+                }
+
                 maud::html! {
-                    table {
-                        @for (key, value) in yaml.as_hash().map(|h| h.iter()).into_iter().flatten() {
-                            tr {
-                                td style="font-weight: bold; padding-right: 1em;" {
+                    table style="border-collapse: collapse; width: 100%; border: 1px solid black;" {
+                        @for (key, value) in yaml.as_hash().into_iter().flat_map(|h| h.iter()) {
+                            tr style="border: 1px solid black;" {
+                                td style="font-weight: bold; padding: 0.5em; border: 1px solid black;" {
                                     (key.as_str().unwrap_or("Unknown"))
                                 }
-                                td {
-                                    pre {
-                                        code {
-                                            (value.as_str().unwrap_or(&format!("{:?}", value)))
-                                        }
-                                    }
+                                td style="padding: 0.5em; border: 1px solid black;" {
+                                    (render_yaml_value(value))
                                 }
                             }
                         }
@@ -44,8 +73,7 @@ fn generate_metadata_box(header: &zettel::Header) -> maud::PreEscaped<String> {
             let metadata_table = yaml_to_table(yaml);
 
             maud::html! {
-                div class="metadata-box" {
-                    h3 { "Metadata" }
+                div class="metadata-box" style="margin-top: 1em;" {
                     (metadata_table)
                 }
             }
