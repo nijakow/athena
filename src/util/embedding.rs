@@ -48,6 +48,17 @@ pub fn generate_embed_for_url(url: &url::Url) -> Option<maud::PreEscaped<String>
     }
 }
 
+pub fn generate_embed_for_url_or_inline(url: &url::Url) -> maud::PreEscaped<String> {
+    if let Some(embed) = generate_embed_for_url(&url) {
+        embed
+    } else {
+        // This is still not perfect, but it is better than nothing
+        maud::html! {
+            iframe src=(url) width="100%" height="500" style="border: none; overflow: hidden" {}
+        }
+    }
+}
+
 pub fn generate_embed_for_url_or_not_displayed(url: &url::Url) -> maud::PreEscaped<String> {
     if let Some(embed) = generate_embed_for_url(&url) {
         embed

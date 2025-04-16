@@ -91,7 +91,7 @@ impl AsHtml for document::node::Node {
                         };
 
                         if link.embed {
-                            crate::util::embedding::generate_embed_for_url_or_not_displayed(url).into_string()
+                            crate::util::embedding::generate_embed_for_url_or_inline(url).into_string()
                         } else {
                             html! {
                                 a href=(url) class="external" {
