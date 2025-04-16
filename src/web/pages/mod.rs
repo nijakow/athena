@@ -3,10 +3,7 @@ use maud::{html, DOCTYPE};
 use std::sync::Arc;
 
 use crate::core::{
-    entity::{
-        self,
-        zettel::{self, document::conversions::html::AsHtml},
-    },
+    entity,
     io::resource,
     vault,
 };
@@ -32,33 +29,6 @@ pub fn decorate_maud_html(title: &str, content: maud::PreEscaped<String>) -> mau
 }
 
 
-pub fn generate_show_zettel(
-    vault: &Arc<vault::Vault>,
-    id: entity::Id,
-    zettel: zettel::Zettel,
-) -> HttpResponse {
-    let title = "Zettel";
-
-    let conversion_context =
-        zettel::document::conversions::html::HtmlConversionContext::new(Arc::clone(vault));
-
-    let content = zettel
-        .body_as_document()
-        .unwrap()
-        .as_html(&conversion_context);
-
-    let html = decorate_maud_html(
-        title,
-        html! {
-            h1 { (title) }
-            a href=(format!("{}?action=edit", id.as_safe_uri())) { "Edit" }
-            br;
-            (maud::PreEscaped(content))
-        },
-    );
-
-    HttpResponse::Ok().body(html.into_string())
-}
 
 pub fn generate_download_resource(resource: resource::Resource) -> HttpResponse {
     let mime = resource
@@ -106,7 +76,7 @@ pub fn generate_show_entity(vault: &Arc<vault::Vault>, id: entity::Id) -> HttpRe
     let entity = vault.load_entity(&id);
 
     match entity {
-        Some(entity::Entity::Zettel(zettel)) => generate_show_zettel(vault, id, zettel),
+        Some(entity::Entity::Zettel(zettel)) => content::zettel::generate_show_zettel(vault, id, zettel),
         Some(entity::Entity::File(file)) => generate_show_file(id, file),
         _ => error::generate_404(),
     }

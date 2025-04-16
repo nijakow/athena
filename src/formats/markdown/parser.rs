@@ -556,7 +556,7 @@ impl MarkdownParser {
                 let (lines, kind) = if line.starts_with("[!") {
                     let kind_end = line.find(']').unwrap();
                     let kind = line.chars().skip(2).take(kind_end - 2).collect();
-                    let line: String = line.chars().skip(kind_end + 2).collect();
+                    // let line: String = line.chars().skip(kind_end + 2).collect();
 
                     (vec![], Some(kind))
                 } else {

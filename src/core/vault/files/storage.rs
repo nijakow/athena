@@ -18,15 +18,13 @@ impl Flags {
 }
 
 pub struct Storage {
-    pub flags: Flags,
-    pub base_path: std::path::PathBuf,
     cache_file_path: std::path::PathBuf,
     file_name_cache: std::collections::HashMap<String, std::path::PathBuf>,
     resource_cache: RwLock<resource::ResourceCache>,
 }
 
 impl Storage {
-    pub fn new(base_path: std::path::PathBuf, flags: Flags) -> Self {
+    pub fn new(base_path: std::path::PathBuf, _flags: Flags) -> Self {
         let file_name_cache = {
             let mut files = std::collections::HashMap::new();
             let mut dirs = vec![base_path.clone()];
@@ -62,8 +60,6 @@ impl Storage {
         };
 
         Self {
-            flags,
-            base_path,
             cache_file_path,
             file_name_cache,
             resource_cache: RwLock::new(resource_cache),
