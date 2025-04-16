@@ -1,70 +1,37 @@
 use crate::core::entity;
 
-#[derive(Debug, Clone, Copy, enum_iterator::Sequence)]
-pub enum ZettelType {
-    Athena,
-    Obsidian,
-}
+pub mod types;
 
-#[derive(Debug, Clone, Copy, enum_iterator::Sequence)]
-pub enum DocumentType {
-    PlainText,
-    Pdf,
-}
-
-#[derive(Debug, Clone, Copy, enum_iterator::Sequence)]
-pub enum ImageType {
-    Png,
-    Jpg,
-    Webp,
-    Gif,
-    Svg,
-    Bmp,
-}
-
-#[derive(Debug, Clone, Copy, enum_iterator::Sequence)]
-pub enum AudioType {
-    Mp3,
-    Ogg,
-    Wav,
-}
-
-#[derive(Debug, Clone, Copy, enum_iterator::Sequence)]
-pub enum VideoType {
-    Mp4,
-    Webm,
-    Ogg,
-}
 
 #[derive(Debug, Clone, Copy, enum_iterator::Sequence)]
 pub enum Type {
-    Zettel(ZettelType),
-    Document(DocumentType),
-    Image(ImageType),
-    Audio(AudioType),
-    Video(VideoType),
+    Zettel(types::ZettelType),
+    Document(types::DocumentType),
+    Image(types::ImageType),
+    Audio(types::AudioType),
+    Video(types::VideoType),
     Unknown,
 }
 
 impl Type {
     pub fn to_extensions(&self) -> Vec<&'static str> {
         match self {
-            Type::Zettel(ZettelType::Athena) => vec!["zson"],
-            Type::Zettel(ZettelType::Obsidian) => vec!["md"],
-            Type::Document(DocumentType::PlainText) => vec!["txt"],
-            Type::Document(DocumentType::Pdf) => vec!["pdf"],
-            Type::Image(ImageType::Png) => vec!["png"],
-            Type::Image(ImageType::Jpg) => vec!["jpg", "jpeg"],
-            Type::Image(ImageType::Webp) => vec!["webp"],
-            Type::Image(ImageType::Gif) => vec!["gif"],
-            Type::Image(ImageType::Svg) => vec!["svg"],
-            Type::Image(ImageType::Bmp) => vec!["bmp"],
-            Type::Audio(AudioType::Mp3) => vec!["mp3"],
-            Type::Audio(AudioType::Ogg) => vec!["ogg"],
-            Type::Audio(AudioType::Wav) => vec!["wav"],
-            Type::Video(VideoType::Mp4) => vec!["mp4"],
-            Type::Video(VideoType::Webm) => vec!["webm"],
-            Type::Video(VideoType::Ogg) => vec!["ogg"],
+            Type::Zettel(types::ZettelType::Athena) => vec!["zson"],
+            Type::Zettel(types::ZettelType::Obsidian) => vec!["md"],
+            Type::Document(types::DocumentType::PlainText) => vec!["txt"],
+            Type::Document(types::DocumentType::Pdf) => vec!["pdf"],
+            Type::Image(types::ImageType::Png) => vec!["png"],
+            Type::Image(types::ImageType::Jpg) => vec!["jpg", "jpeg"],
+            Type::Image(types::ImageType::Webp) => vec!["webp"],
+            Type::Image(types::ImageType::Gif) => vec!["gif"],
+            Type::Image(types::ImageType::Svg) => vec!["svg"],
+            Type::Image(types::ImageType::Bmp) => vec!["bmp"],
+            Type::Audio(types::AudioType::Mp3) => vec!["mp3"],
+            Type::Audio(types::AudioType::Ogg) => vec!["ogg"],
+            Type::Audio(types::AudioType::Wav) => vec!["wav"],
+            Type::Video(types::VideoType::Mp4) => vec!["mp4"],
+            Type::Video(types::VideoType::Webm) => vec!["webm"],
+            Type::Video(types::VideoType::Ogg) => vec!["ogg"],
             Type::Unknown => vec![],
         }
     }
@@ -83,22 +50,22 @@ impl Type {
 
     pub fn mime_type(&self) -> &'static str {
         match self {
-            Type::Zettel(ZettelType::Athena) => "application/json",
-            Type::Zettel(ZettelType::Obsidian) => "text/markdown",
-            Type::Document(DocumentType::PlainText) => "text/plain",
-            Type::Document(DocumentType::Pdf) => "application/pdf",
-            Type::Image(ImageType::Png) => "image/png",
-            Type::Image(ImageType::Jpg) => "image/jpeg",
-            Type::Image(ImageType::Webp) => "image/webp",
-            Type::Image(ImageType::Gif) => "image/gif",
-            Type::Image(ImageType::Svg) => "image/svg+xml",
-            Type::Image(ImageType::Bmp) => "image/bmp",
-            Type::Audio(AudioType::Mp3) => "audio/mpeg",
-            Type::Audio(AudioType::Ogg) => "audio/ogg",
-            Type::Audio(AudioType::Wav) => "audio/wav",
-            Type::Video(VideoType::Mp4) => "video/mp4",
-            Type::Video(VideoType::Webm) => "video/webm",
-            Type::Video(VideoType::Ogg) => "video/ogg",
+            Type::Zettel(types::ZettelType::Athena) => "application/json",
+            Type::Zettel(types::ZettelType::Obsidian) => "text/markdown",
+            Type::Document(types::DocumentType::PlainText) => "text/plain",
+            Type::Document(types::DocumentType::Pdf) => "application/pdf",
+            Type::Image(types::ImageType::Png) => "image/png",
+            Type::Image(types::ImageType::Jpg) => "image/jpeg",
+            Type::Image(types::ImageType::Webp) => "image/webp",
+            Type::Image(types::ImageType::Gif) => "image/gif",
+            Type::Image(types::ImageType::Svg) => "image/svg+xml",
+            Type::Image(types::ImageType::Bmp) => "image/bmp",
+            Type::Audio(types::AudioType::Mp3) => "audio/mpeg",
+            Type::Audio(types::AudioType::Ogg) => "audio/ogg",
+            Type::Audio(types::AudioType::Wav) => "audio/wav",
+            Type::Video(types::VideoType::Mp4) => "video/mp4",
+            Type::Video(types::VideoType::Webm) => "video/webm",
+            Type::Video(types::VideoType::Ogg) => "video/ogg",
             Type::Unknown => "application/octet-stream",
         }
     }
@@ -130,6 +97,7 @@ impl Type {
         Self::all().iter().flat_map(|t| t.to_extensions()).collect()
     }
 }
+
 
 pub struct Metadata {
     pub resource_type: Option<Type>,

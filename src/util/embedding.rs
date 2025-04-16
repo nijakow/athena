@@ -41,7 +41,7 @@ pub fn embed_file_for_id<S: ToString>(
     };
 
     match file.metadata().file_type() {
-        resource::Type::Document(resource::DocumentType::PlainText) => {
+        resource::Type::Document(resource::types::DocumentType::PlainText) => {
             if let Ok(content) = std::str::from_utf8(file.content()) {
                 maud::html! {
                     pre { (content) }
@@ -50,7 +50,7 @@ pub fn embed_file_for_id<S: ToString>(
                 content_not_displayed()
             }
         }
-        resource::Type::Document(resource::DocumentType::Pdf) => {
+        resource::Type::Document(resource::types::DocumentType::Pdf) => {
             let content = maud::html! {
                 // Keep the link to the original URI in the tag, so that the PDF can be opened in a new tab
                 object class="pdf" data=(id.as_safe_download_uri()) type="application/pdf" width="100%" style="aspect-ratio: 4 / 3" {}

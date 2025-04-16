@@ -19,7 +19,7 @@ impl Entity {
         let metadata = resource.metadata();
 
         match metadata.resource_type {
-            Some(resource::Type::Zettel(resource::ZettelType::Obsidian)) => {
+            Some(resource::Type::Zettel(resource::types::ZettelType::Obsidian)) => {
                 let markdown = resource.read_to_obsidian_markdown()?;
                 let zettel = zettel::Zettel::from_obsidian_markdown(&markdown).map_err(|_| "Failed to parse Zettel")?;
 
