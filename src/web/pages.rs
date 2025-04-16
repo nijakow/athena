@@ -1,0 +1,186 @@
+use actix_web::{web, HttpResponse};
+use maud::{html, DOCTYPE};
+use std::sync::Arc;
+
+use crate::core::{
+    entity::{
+        self,
+        zettel::{self, document::conversions::html::AsHtml},
+    },
+    io::resource,
+    vault,
+};
+
+pub fn decorate_maud_html(title: &str, content: maud::PreEscaped<String>) -> maud::PreEscaped<String> {
+    html! {
+        (DOCTYPE)
+        meta charset="utf-8";
+        html {
+            head {
+                title { (title) }
+                link rel="stylesheet" href="/web/css.css";
+            }
+            body {
+                (content)
+            }
+        }
+    }
+}
+
+pub fn generate_http_error_response(
+    code: actix_web::http::StatusCode,
+    message: Option<String>,
+) -> HttpResponse {
+    let headline = match code {
+        actix_web::http::StatusCode::NOT_FOUND => "Not found",
+        _ => "Error",
+    };
+
+    let status = match message {
+        Some(message) => format!("{}: {}", code, message),
+        None => format!("{}", code),
+    };
+
+    let html = decorate_maud_html(
+        "Error",
+        html! {
+            h1 { (headline) }
+            p { (status) }
+        },
+    );
+
+    HttpResponse::build(code).body(html.into_string())
+}
+
+pub fn generate_404() -> HttpResponse {
+    generate_http_error_response(actix_web::http::StatusCode::NOT_FOUND, None)
+}
+
+
+pub fn generate_show_zettel(
+    vault: &Arc<vault::Vault>,
+    id: entity::Id,
+    zettel: zettel::Zettel,
+) -> HttpResponse {
+    let title = "Zettel";
+
+    let conversion_context =
+        zettel::document::conversions::html::HtmlConversionContext::new(Arc::clone(vault));
+
+    let content = zettel
+        .body_as_document()
+        .unwrap()
+        .as_html(&conversion_context);
+
+    let html = decorate_maud_html(
+        title,
+        html! {
+            h1 { (title) }
+            a href=(format!("{}?action=edit", id.as_safe_uri())) { "Edit" }
+            br;
+            (maud::PreEscaped(content))
+        },
+    );
+
+    HttpResponse::Ok().body(html.into_string())
+}
+
+pub fn generate_download_resource(resource: resource::Resource) -> HttpResponse {
+    let mime = resource
+        .metadata()
+        .resource_type
+        .map(|rt| rt.mime_type())
+        .unwrap_or_else(|| "application/octet-stream");
+    let content = resource.read_to_bytes().unwrap();
+
+    let mime = if mime == "text/plain" || mime == "text/markdown" {
+        format!("text/plain; charset=utf-8")
+    } else {
+        mime.to_string()
+    };
+
+    HttpResponse::Ok().content_type(mime).body(content)
+}
+
+pub fn generate_show_file(id: entity::Id, file: entity::file::File) -> HttpResponse {
+    let title = file
+        .metadata()
+        .title()
+        .unwrap_or_else(|| "Untitled".to_string());
+
+    let file_type = file.metadata().file_type();
+
+    let mime = file_type.mime_type();
+
+    let displayed_content_html =
+        crate::util::embedding::embed_file_for_id(&file, &id, &title, true);
+
+    let html = decorate_maud_html(
+        &title,
+        html! {
+            h1 { (title) }
+            p { "MIME type: " code { (mime) } }
+            (displayed_content_html)
+        },
+    );
+
+    HttpResponse::Ok().body(html.into_string())
+}
+
+pub fn generate_show_entity(vault: &Arc<vault::Vault>, id: entity::Id) -> HttpResponse {
+    let entity = vault.load_entity(&id);
+
+    match entity {
+        Some(entity::Entity::Zettel(zettel)) => generate_show_zettel(vault, id, zettel),
+        Some(entity::Entity::File(file)) => generate_show_file(id, file),
+        _ => generate_404(),
+    }
+}
+
+pub async fn show_entity(
+    vault: web::Data<Arc<vault::Vault>>,
+    id: web::Path<String>,
+    header: web::Header<actix_web::http::header::Accept>,
+) -> HttpResponse {
+    // If we accept HTML, we will show the entity. Otherwise, we will download it.
+
+    let accept_html: bool = header
+        .iter()
+        .any(|accept| accept.to_string().to_lowercase().contains("text/html"));
+
+    if accept_html {
+        generate_show_entity(&vault, entity::Id::with_id(id.into_inner()))
+    } else {
+        super::routes::download_entity(vault, id).await // TODO: Move this to us!
+    }
+}
+
+pub async fn edit_zettel(
+    vault: web::Data<Arc<vault::Vault>>,
+    id: web::Path<String>,
+) -> HttpResponse {
+    let id = entity::Id::with_id(id.into_inner());
+    let zettel = vault.load_zettel(&id);
+
+    let vault_ref = vault.get_ref();
+
+    let conversion_context =
+        zettel::document::conversions::html::HtmlConversionContext::new(Arc::clone(vault_ref));
+
+    let html = decorate_maud_html(
+        "Zettel",
+        html! {
+            h1 { "Zettel" }
+            form action=(format!("{}", id.as_safe_uri())) method="post" {
+                textarea name="content" {
+                    @if let Some(zettel) = zettel {
+                        (zettel.body_as_document().unwrap().as_html(&conversion_context))
+                    }
+                }
+                button type="submit" { "Save" }
+            }
+        },
+    );
+
+    HttpResponse::Ok().body(html.into_string())
+}
