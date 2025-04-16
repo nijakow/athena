@@ -59,6 +59,13 @@ impl Id {
         }
     }
 
+    pub fn as_readable_string(&self) -> String {
+        match self {
+            Id::Sha256(sha256) => sha256.as_string(),
+            Id::Basic(string) => string.clone(),
+        }
+    }
+
     pub fn as_safe_uri(&self) -> String {
         format!("/entity/{}", self.id())
     }

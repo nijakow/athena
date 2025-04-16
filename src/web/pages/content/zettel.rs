@@ -3,13 +3,19 @@ use std::sync::Arc;
 use actix_web::{web, HttpResponse};
 use maud::html;
 
-use crate::{core::{entity::{self, zettel::{self, document::conversions::html::AsHtml}}, vault}, web::pages};
-
+use crate::{
+    core::{
+        entity::{
+            self,
+            zettel::{self, document::conversions::html::AsHtml},
+        },
+        vault,
+    },
+    web::pages,
+};
 
 /// Generate a HTML table containing the metadata of a zettel.
-fn generate_metadata_box(
-    header: &zettel::Header,
-) -> maud::PreEscaped<String> {
+fn generate_metadata_box(header: &zettel::Header) -> maud::PreEscaped<String> {
     let yaml = &header.yaml;
 
     match yaml {
@@ -35,13 +41,15 @@ fn generate_metadata_box(
     }
 }
 
-
 pub fn generate_show_zettel(
     vault: &Arc<vault::Vault>,
     id: entity::Id,
     zettel: zettel::Zettel,
 ) -> HttpResponse {
-    let title = "Zettel";
+    let title = zettel
+        .title()
+        .map(String::from)
+        .unwrap_or_else(|| id.as_readable_string());
 
     let conversion_context =
         zettel::document::conversions::html::HtmlConversionContext::new(Arc::clone(vault));
@@ -52,7 +60,7 @@ pub fn generate_show_zettel(
         .as_html(&conversion_context);
 
     let html = pages::decorate_maud_html(
-        title,
+        &title,
         html! {
             h1 { (title) }
             a href=(format!("{}?action=edit", id.as_safe_uri())) { "Edit" }

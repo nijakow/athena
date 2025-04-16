@@ -80,6 +80,10 @@ impl Zettel {
         &self.body
     }
 
+    pub fn title(&self) -> Option<&str> {
+        self.header.title.as_deref()
+    }
+
     pub fn body_as_document(&self) -> Option<&document::Document> {
         self.body.as_document()
     }
