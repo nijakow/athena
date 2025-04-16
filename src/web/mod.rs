@@ -12,6 +12,22 @@ use crate::core::{
     vault,
 };
 
+fn decorate_maud_html(title: &str, content: maud::PreEscaped<String>) -> maud::PreEscaped<String> {
+    html! {
+        (DOCTYPE)
+        meta charset="utf-8";
+        html {
+            head {
+                title { (title) }
+                link rel="stylesheet" href="/web/css.css";
+            }
+            body {
+                (content)
+            }
+        }
+    }
+}
+
 fn generate_http_error_response(
     code: actix_web::http::StatusCode,
     message: Option<String>,
@@ -26,19 +42,13 @@ fn generate_http_error_response(
         None => format!("{}", code),
     };
 
-    let html = html! {
-        (DOCTYPE)
-        meta charset="utf-8";
-        html {
-            head {
-                title { "Error" }
-            }
-            body {
-                h1 { (headline) }
-                p { (status) }
-            }
-        }
-    };
+    let html = decorate_maud_html(
+        "Error",
+        html! {
+            h1 { (headline) }
+            p { (status) }
+        },
+    );
 
     HttpResponse::build(code).body(html.into_string())
 }
@@ -61,25 +71,19 @@ async fn list_entities(vault: web::Data<Arc<vault::Vault>>) -> impl Responder {
 
     zettels.sort_by(|a, b| a.1.cmp(&b.1));
 
-    let html = html! {
-        (DOCTYPE)
-        meta charset="utf-8";
-        html {
-            head {
-                title { "Zettel" }
-            }
-            body {
-                h1 { "Zettels" }
-                ul {
-                    @for (id, title) in zettels {
-                        li {
-                            a href=(format!("{}", id.as_safe_uri())) { (title) }
-                        }
+    let html = decorate_maud_html(
+        "Zettel",
+        html! {
+            h1 { "Zettels" }
+            ul {
+                @for (id, title) in zettels {
+                    li {
+                        a href=(format!("{}", id.as_safe_uri())) { (title) }
                     }
                 }
             }
-        }
-    };
+        },
+    );
 
     HttpResponse::Ok().body(html.into_string())
 }
@@ -99,21 +103,15 @@ fn generate_show_zettel(
         .unwrap()
         .as_html(&conversion_context);
 
-    let html = html! {
-        (DOCTYPE)
-        meta charset="utf-8";
-        html {
-            head {
-                title { (title) }
-            }
-            body {
-                h1 { (title) }
-                a href=(format!("{}?action=edit", id.as_safe_uri())) { "Edit" }
-                br;
-                (maud::PreEscaped(content))
-            }
-        }
-    };
+    let html = decorate_maud_html(
+        title,
+        html! {
+            h1 { (title) }
+            a href=(format!("{}?action=edit", id.as_safe_uri())) { "Edit" }
+            br;
+            (maud::PreEscaped(content))
+        },
+    );
 
     HttpResponse::Ok().body(html.into_string())
 }
@@ -148,20 +146,14 @@ fn generate_show_file(id: entity::Id, file: entity::file::File) -> HttpResponse 
     let displayed_content_html =
         crate::util::embedding::embed_file_for_id(&file, &id, &title, true);
 
-    let html = html! {
-        (DOCTYPE)
-        meta charset="utf-8";
-        html {
-            head {
-                title { (title) }
-            }
-            body {
-                h1 { (title) }
-                p { "MIME type: " code { (mime) } }
-                (displayed_content_html)
-            }
-        }
-    };
+    let html = decorate_maud_html(
+        &title,
+        html! {
+            h1 { (title) }
+            p { "MIME type: " code { (mime) } }
+            (displayed_content_html)
+        },
+    );
 
     HttpResponse::Ok().body(html.into_string())
 }
@@ -206,25 +198,20 @@ pub async fn edit_zettel(
     let conversion_context =
         zettel::document::conversions::html::HtmlConversionContext::new(Arc::clone(vault_ref));
 
-    let html = html! {
-        (DOCTYPE)
-        html {
-            head {
-                title { "Zettel" }
-            }
-            body {
-                h1 { "Zettel" }
-                form action=(format!("{}", id.as_safe_uri())) method="post" {
-                    textarea name="content" {
-                        @if let Some(zettel) = zettel {
-                            (zettel.body_as_document().unwrap().as_html(&conversion_context))
-                        }
+    let html = decorate_maud_html(
+        "Zettel",
+        html! {
+            h1 { "Zettel" }
+            form action=(format!("{}", id.as_safe_uri())) method="post" {
+                textarea name="content" {
+                    @if let Some(zettel) = zettel {
+                        (zettel.body_as_document().unwrap().as_html(&conversion_context))
                     }
-                    button type="submit" { "Save" }
                 }
+                button type="submit" { "Save" }
             }
-        }
-    };
+        },
+    );
 
     HttpResponse::Ok().body(html.into_string())
 }
@@ -284,6 +271,18 @@ async fn download_entity(
     }
 }
 
+async fn web_file(_vault: web::Data<Arc<vault::Vault>>, id: web::Path<String>) -> HttpResponse {
+    let file_name = id.into_inner();
+
+    match file_name.as_str() {
+        "css.css" => {
+            let css = include_str!("../../static/css.css");
+            HttpResponse::Ok().content_type("text/css").body(css)
+        }
+        _ => generate_404(),
+    }
+}
+
 async fn run_periodic_task(vault: Arc<vault::Vault>) {
     let mut interval = interval(Duration::from_secs(60)); // Run every 60 seconds
 
@@ -312,6 +311,7 @@ pub async fn go(vault: vault::Vault) -> std::io::Result<()> {
             App::new()
                 .app_data(vault_data.clone())
                 .route("/", web::get().to(list_entities))
+                .route("/web/{file}", web::get().to(web_file))
                 .route("/entity/{id}", web::get().to(process_entity))
                 .route("/entity/{id}", web::post().to(post_entity))
                 .route("/raw/{id}", web::get().to(download_entity))

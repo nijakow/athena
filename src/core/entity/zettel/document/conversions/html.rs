@@ -84,8 +84,9 @@ impl AsHtml for document::node::Node {
                             .collect::<String>();
 
                         // TODO: Escape the text?
+                        // Also, mark the link as external by overriding the background-image style
                         format!(
-                            "<a href=\"{}\">{}</a>",
+                            "<a href=\"{}\" class=\"external\">{}</a>",
                             url,
                             if caption.is_empty() {
                                 url.to_string()
