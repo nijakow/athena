@@ -18,7 +18,7 @@ pub async fn web_file(_vault: web::Data<Arc<vault::Vault>>, id: web::Path<String
             let css = include_str!("../../../static/css.css");
             HttpResponse::Ok().content_type("text/css").body(css)
         }
-        _ => pages::generate_404(),
+        _ => pages::error::generate_404(),
     }
 }
 
@@ -63,7 +63,7 @@ pub async fn process_entity(
     let action = query.get("action").map(|s| s.as_str());
 
     match action {
-        Some("edit") => pages::edit_zettel(vault, id).await,
+        Some("edit") => pages::content::zettel::edit_zettel(vault, id).await,
         _ => pages::show_entity(vault, id, accept).await,
     }
 }
@@ -77,7 +77,7 @@ pub async fn download_entity(
     if let Some(resource) = vault.load_resource(&id) {
         pages::generate_download_resource(resource)
     } else {
-        pages::generate_http_error_response(
+        pages::error::generate_http_error_response(
             actix_web::http::StatusCode::NOT_IMPLEMENTED,
             Some("Download for this type not implemented yet!".to_string()),
         )
@@ -97,7 +97,7 @@ pub async fn post_entity(
     let zettel = vault.load_zettel(&id);
 
     match zettel {
-        Some(zettel) => {
+        Some(_zettel) => {
             println!("Zettel found, updating content");
         }
         None => {

@@ -11,6 +11,10 @@ use crate::core::{
     vault,
 };
 
+pub mod error;
+pub mod content;
+
+
 pub fn decorate_maud_html(title: &str, content: maud::PreEscaped<String>) -> maud::PreEscaped<String> {
     html! {
         (DOCTYPE)
@@ -25,35 +29,6 @@ pub fn decorate_maud_html(title: &str, content: maud::PreEscaped<String>) -> mau
             }
         }
     }
-}
-
-pub fn generate_http_error_response(
-    code: actix_web::http::StatusCode,
-    message: Option<String>,
-) -> HttpResponse {
-    let headline = match code {
-        actix_web::http::StatusCode::NOT_FOUND => "Not found",
-        _ => "Error",
-    };
-
-    let status = match message {
-        Some(message) => format!("{}: {}", code, message),
-        None => format!("{}", code),
-    };
-
-    let html = decorate_maud_html(
-        "Error",
-        html! {
-            h1 { (headline) }
-            p { (status) }
-        },
-    );
-
-    HttpResponse::build(code).body(html.into_string())
-}
-
-pub fn generate_404() -> HttpResponse {
-    generate_http_error_response(actix_web::http::StatusCode::NOT_FOUND, None)
 }
 
 
@@ -133,7 +108,7 @@ pub fn generate_show_entity(vault: &Arc<vault::Vault>, id: entity::Id) -> HttpRe
     match entity {
         Some(entity::Entity::Zettel(zettel)) => generate_show_zettel(vault, id, zettel),
         Some(entity::Entity::File(file)) => generate_show_file(id, file),
-        _ => generate_404(),
+        _ => error::generate_404(),
     }
 }
 
@@ -153,34 +128,4 @@ pub async fn show_entity(
     } else {
         super::routes::download_entity(vault, id).await // TODO: Move this to us!
     }
-}
-
-pub async fn edit_zettel(
-    vault: web::Data<Arc<vault::Vault>>,
-    id: web::Path<String>,
-) -> HttpResponse {
-    let id = entity::Id::with_id(id.into_inner());
-    let zettel = vault.load_zettel(&id);
-
-    let vault_ref = vault.get_ref();
-
-    let conversion_context =
-        zettel::document::conversions::html::HtmlConversionContext::new(Arc::clone(vault_ref));
-
-    let html = decorate_maud_html(
-        "Zettel",
-        html! {
-            h1 { "Zettel" }
-            form action=(format!("{}", id.as_safe_uri())) method="post" {
-                textarea name="content" {
-                    @if let Some(zettel) = zettel {
-                        (zettel.body_as_document().unwrap().as_html(&conversion_context))
-                    }
-                }
-                button type="submit" { "Save" }
-            }
-        },
-    );
-
-    HttpResponse::Ok().body(html.into_string())
 }
