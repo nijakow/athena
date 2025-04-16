@@ -174,11 +174,21 @@ impl Resource {
     ) -> Result<crate::formats::markdown::ObsidianDocument, Box<dyn std::error::Error>> {
         let content = std::fs::read_to_string(&self.path)?;
 
-        // TODO: Extract the YAML info
+        let (metadata, content) = crate::util::split_metadata_from_content(content);
 
-        crate::formats::markdown::parser::parse_document(content)
-            .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
-            .map(|doc| doc.into())
+        let metadata = metadata
+            .and_then(|m| yaml_rust2::YamlLoader::load_from_str(&m).ok())
+            .and_then(|mut docs| docs.pop());
+
+        match crate::formats::markdown::parser::parse_document(content) {
+            Ok(document) => {
+                Ok(crate::formats::markdown::ObsidianDocument {
+                    head: metadata,
+                    body: document,
+                })
+            }
+            Err(e) => Err(Box::new(e)),
+        }
     }
 }
 
