@@ -47,7 +47,6 @@ pub enum Type {
 }
 
 impl Type {
-
     pub fn to_extensions(&self) -> Vec<&'static str> {
         match self {
             Type::Zettel(ZettelType::Athena) => vec!["zson"],
@@ -262,6 +261,28 @@ impl ResourceCache {
         Self {
             hashes: std::collections::HashMap::new(),
         }
+    }
+
+    pub fn load_from_file(path: &std::path::Path) -> std::io::Result<Self> {
+        let file = std::fs::File::open(path)?;
+        let reader = std::io::BufReader::new(file);
+        let hashes: std::collections::HashMap<std::path::PathBuf, crate::util::hashing::Sha256> =
+            serde_json::from_reader(reader)?;
+
+        Ok(Self { hashes })
+    }
+
+    pub fn save_to_file(&self, path: &std::path::Path) -> std::io::Result<()> {
+        let json = serde_json::to_string(&self.hashes)?;
+
+        {
+            use std::io::Write;
+
+            let mut file = std::fs::File::create(path)?;
+            file.write_all(json.as_bytes())?;
+        }
+
+        Ok(())
     }
 
     fn get_hash(&self, path: &std::path::Path) -> Option<&crate::util::hashing::Sha256> {

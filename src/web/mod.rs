@@ -1,6 +1,7 @@
-use actix_web::{http::header, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use maud::{html, DOCTYPE};
 use std::{collections::HashMap, sync::Arc};
+use tokio::time::{interval, Duration};
 
 use crate::core::{
     entity::{
@@ -90,9 +91,13 @@ fn generate_show_zettel(
 ) -> HttpResponse {
     let title = "Zettel";
 
-    let conversion_context = zettel::document::conversions::html::HtmlConversionContext::new(Arc::clone(vault));
+    let conversion_context =
+        zettel::document::conversions::html::HtmlConversionContext::new(Arc::clone(vault));
 
-    let content = zettel.body_as_document().unwrap().as_html(&conversion_context);
+    let content = zettel
+        .body_as_document()
+        .unwrap()
+        .as_html(&conversion_context);
 
     let html = html! {
         (DOCTYPE)
@@ -114,7 +119,11 @@ fn generate_show_zettel(
 }
 
 fn generate_download_resource(resource: resource::Resource) -> HttpResponse {
-    let mime = resource.metadata().resource_type.map(|rt| rt.mime_type()).unwrap_or_else(|| "application/octet-stream");
+    let mime = resource
+        .metadata()
+        .resource_type
+        .map(|rt| rt.mime_type())
+        .unwrap_or_else(|| "application/octet-stream");
     let content = resource.read_to_bytes().unwrap();
 
     let mime = if mime == "text/plain" || mime == "text/markdown" {
@@ -127,13 +136,17 @@ fn generate_download_resource(resource: resource::Resource) -> HttpResponse {
 }
 
 fn generate_show_file(id: entity::Id, file: entity::file::File) -> HttpResponse {
-    let title = file.metadata().title().unwrap_or_else(|| "Untitled".to_string());
+    let title = file
+        .metadata()
+        .title()
+        .unwrap_or_else(|| "Untitled".to_string());
 
     let file_type = file.metadata().file_type();
 
     let mime = file_type.mime_type();
 
-    let displayed_content_html = crate::util::embedding::embed_file_for_id(&file, &id, &title, true);
+    let displayed_content_html =
+        crate::util::embedding::embed_file_for_id(&file, &id, &title, true);
 
     let html = html! {
         (DOCTYPE)
@@ -190,7 +203,8 @@ pub async fn edit_zettel(
 
     let vault_ref = vault.get_ref();
 
-    let conversion_context = zettel::document::conversions::html::HtmlConversionContext::new(Arc::clone(vault_ref));
+    let conversion_context =
+        zettel::document::conversions::html::HtmlConversionContext::new(Arc::clone(vault_ref));
 
     let html = html! {
         (DOCTYPE)
@@ -270,18 +284,39 @@ async fn download_entity(
     }
 }
 
-pub async fn go(vault: vault::Vault) -> std::io::Result<()> {
-    let vault_data = web::Data::new(Arc::new(vault));
+async fn run_periodic_task(_vault: Arc<vault::Vault>) {
+    let mut interval = interval(Duration::from_secs(60)); // Run every 60 seconds
 
-    HttpServer::new(move || {
-        App::new()
-            .app_data(vault_data.clone())
-            .route("/", web::get().to(list_entities))
-            .route("/entity/{id}", web::get().to(process_entity))
-            .route("/entity/{id}", web::post().to(post_entity))
-            .route("/raw/{id}", web::get().to(download_entity))
-    })
-    .bind("127.0.0.1:8080")?
-    .run()
-    .await
+    loop {
+        interval.tick().await;
+
+        println!("Running periodic task on the vault...");
+    }
+}
+
+pub async fn go(vault: vault::Vault) -> std::io::Result<()> {
+    let vault_data = Arc::new(vault);
+
+    {
+        let vault_clone = Arc::clone(&vault_data);
+        tokio::spawn(async move {
+            run_periodic_task(vault_clone).await;
+        });
+    }
+
+    {
+        let vault_data = web::Data::new(vault_data);
+
+        HttpServer::new(move || {
+            App::new()
+                .app_data(vault_data.clone())
+                .route("/", web::get().to(list_entities))
+                .route("/entity/{id}", web::get().to(process_entity))
+                .route("/entity/{id}", web::post().to(post_entity))
+                .route("/raw/{id}", web::get().to(download_entity))
+        })
+        .bind("127.0.0.1:8080")?
+        .run()
+        .await
+    }
 }
