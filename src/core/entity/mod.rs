@@ -1,11 +1,9 @@
 use super::io::resource;
 
-
 pub mod id;
 
 pub mod file;
 pub mod zettel;
-
 
 pub type Id = id::Id;
 
@@ -20,8 +18,9 @@ impl Entity {
 
         match metadata.resource_type {
             Some(resource::Type::Zettel(resource::types::ZettelType::Obsidian)) => {
-                let markdown = resource.read_to_obsidian_markdown()?;
-                let zettel = zettel::Zettel::from_obsidian_markdown(&markdown).map_err(|_| "Failed to parse Zettel")?;
+                let document = resource.read_to_obsidian_markdown()?;
+                let zettel = zettel::Zettel::from_obsidian_markdown(document)
+                    .map_err(|_| "Failed to parse Zettel")?;
 
                 Ok(Entity::Zettel(zettel))
             }

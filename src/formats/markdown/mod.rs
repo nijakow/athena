@@ -103,3 +103,23 @@ pub type Blocks = Vec<Block>;
 pub struct Document {
     pub blocks: Blocks,
 }
+
+pub struct ObsidianDocument {
+    pub head: Option<yaml_rust2::Yaml>,
+    pub body: Document,
+}
+
+impl From<ObsidianDocument> for Document {
+    fn from(obsidian: ObsidianDocument) -> Document {
+        obsidian.body
+    }
+}
+
+impl From<Document> for ObsidianDocument {
+    fn from(doc: Document) -> ObsidianDocument {
+        ObsidianDocument {
+            head: None,
+            body: doc,
+        }
+    }
+}

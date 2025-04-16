@@ -171,11 +171,14 @@ impl Resource {
 
     pub fn read_to_obsidian_markdown(
         &self,
-    ) -> Result<crate::formats::markdown::Document, Box<dyn std::error::Error>> {
+    ) -> Result<crate::formats::markdown::ObsidianDocument, Box<dyn std::error::Error>> {
         let content = std::fs::read_to_string(&self.path)?;
+
+        // TODO: Extract the YAML info
 
         crate::formats::markdown::parser::parse_document(content)
             .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+            .map(|doc| doc.into())
     }
 }
 

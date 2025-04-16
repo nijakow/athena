@@ -14,13 +14,20 @@ impl Header {
         }
     }
 
-    fn from_yaml(yaml: Option<yaml_rust2::Yaml>) -> Self {
+    fn from_yaml(yaml: yaml_rust2::Yaml) -> Self {
         Self {
-            title: None,
-            yaml,
+            title: yaml["title"].as_str().map(|s| s.to_string()),
+            yaml: Some(yaml.clone()),
         }
     }
 }
+
+impl Default for Header {
+    fn default() -> Self {
+        Self::new(None)
+    }
+}
+
 
 pub enum Body {
     Empty,
@@ -52,11 +59,17 @@ impl Zettel {
         Zettel { header, body }
     }
 
-    pub(crate) fn from_obsidian_markdown(markdown: &crate::formats::markdown::Document) -> Result<Zettel, ()> {
-        let body = Body::from_obsidian_markdown(markdown)?;
-        let header = Header::new(None); // TODO!
+    pub(crate) fn from_obsidian_markdown(document: crate::formats::markdown::ObsidianDocument) -> Result<Zettel, ()> {
+        let (yaml, document) = (document.head, document.body);
+        
+        let head = if let Some(yaml) = yaml {
+            Header::from_yaml(yaml)
+        } else {
+            Header::default()
+        };
+        let body = Body::from_obsidian_markdown(&document)?;
 
-        Ok(Zettel::new(header, body))
+        Ok(Zettel::new(head, body))
     }
 
     pub fn header(&self) -> &Header {
