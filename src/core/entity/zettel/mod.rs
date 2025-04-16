@@ -1,14 +1,24 @@
 
 pub mod document;
 
-
 pub struct Header {
     pub title: Option<String>,
+    pub yaml: Option<yaml_rust2::Yaml>,
 }
 
 impl Header {
     fn new(title: Option<String>) -> Self {
-        Header { title }
+        Self {
+            title,
+            yaml: None,
+        }
+    }
+
+    fn from_yaml(yaml: Option<yaml_rust2::Yaml>) -> Self {
+        Self {
+            title: None,
+            yaml,
+        }
     }
 }
 
