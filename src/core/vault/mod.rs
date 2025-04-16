@@ -69,4 +69,8 @@ impl Vault {
             entity::Entity::Zettel(zettel) => zettel.header().title.clone().or_else(|| Some(id.id().to_string())),
         }
     }
+
+    pub fn tick(&self) {
+        self.files.tick();
+    }
 }

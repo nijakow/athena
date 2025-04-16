@@ -20,6 +20,7 @@ impl Flags {
 pub struct Storage {
     pub flags: Flags,
     pub base_path: std::path::PathBuf,
+    cache_file_path: std::path::PathBuf,
     file_name_cache: std::collections::HashMap<String, std::path::PathBuf>,
     resource_cache: RwLock<resource::ResourceCache>,
 }
@@ -51,10 +52,10 @@ impl Storage {
             files
         };
 
-        let cache_file = base_path.join("athena-cache.json");
+        let cache_file_path = base_path.join("athena-cache.json");
 
-        let resource_cache = if cache_file.exists() {
-            resource::ResourceCache::load_from_file(&cache_file)
+        let resource_cache = if cache_file_path.exists() {
+            resource::ResourceCache::load_from_file(&cache_file_path)
                 .unwrap_or_else(|_| resource::ResourceCache::new())
         } else {
             resource::ResourceCache::new()
@@ -63,6 +64,7 @@ impl Storage {
         Self {
             flags,
             base_path,
+            cache_file_path,
             file_name_cache,
             resource_cache: RwLock::new(resource_cache),
         }
@@ -142,5 +144,14 @@ impl Storage {
             }
             entity::Id::Basic(name) => self.resource_by_short_name(name),
         }
+    }
+
+    fn save(&self) {
+        let resource_cache = self.resource_cache.read().unwrap();
+        resource_cache.save_to_file(&self.cache_file_path).unwrap();
+    }
+
+    pub fn tick(&self) {
+        self.save();
     }
 }

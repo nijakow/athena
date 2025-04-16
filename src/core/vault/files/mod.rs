@@ -24,4 +24,10 @@ impl Files {
             .filter_map(|storage| storage.resource_by_id(id))
             .next()
     }
+
+    pub fn tick(&self) {
+        for storage in &self.storages {
+            storage.tick();
+        }
+    }
 }

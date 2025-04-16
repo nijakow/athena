@@ -284,13 +284,14 @@ async fn download_entity(
     }
 }
 
-async fn run_periodic_task(_vault: Arc<vault::Vault>) {
+async fn run_periodic_task(vault: Arc<vault::Vault>) {
     let mut interval = interval(Duration::from_secs(60)); // Run every 60 seconds
 
     loop {
         interval.tick().await;
 
         println!("Running periodic task on the vault...");
+        vault.tick();
     }
 }
 
