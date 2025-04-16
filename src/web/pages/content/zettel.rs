@@ -20,20 +20,33 @@ fn generate_metadata_box(header: &zettel::Header) -> maud::PreEscaped<String> {
 
     match yaml {
         Some(yaml) => {
-            fn yaml_to_string(yaml: &yaml_rust2::Yaml) -> String {
-                let mut buffer = String::new(); // Create a buffer to write the serialized YAML
-                let mut emitter = yaml_rust2::YamlEmitter::new(&mut buffer); // Create a YamlEmitter
-                emitter.dump(yaml).unwrap(); // Serialize the YAML into the buffer
-                buffer // Use the buffer directly as it is already a String
+            fn yaml_to_table(yaml: &yaml_rust2::Yaml) -> maud::Markup {
+                maud::html! {
+                    table {
+                        @for (key, value) in yaml.as_hash().map(|h| h.iter()).into_iter().flatten() {
+                            tr {
+                                td style="font-weight: bold; padding-right: 1em;" {
+                                    (key.as_str().unwrap_or("Unknown"))
+                                }
+                                td {
+                                    pre {
+                                        code {
+                                            (value.as_str().unwrap_or(&format!("{:?}", value)))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
-            let yaml_string = yaml_to_string(yaml);
+            let metadata_table = yaml_to_table(yaml);
 
             maud::html! {
-                pre {
-                    code {
-                        (yaml_string)
-                    }
+                div class="metadata-box" {
+                    h3 { "Metadata" }
+                    (metadata_table)
                 }
             }
         }
