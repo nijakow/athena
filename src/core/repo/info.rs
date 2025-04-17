@@ -1,5 +1,10 @@
 
+pub enum UserDirectory {
+    Home,
+    Documents,
+}
+
 pub enum DirectoryPurpose {
-    HomeDirectory,
+    UserDirectory(UserDirectory),
     UniversityCourse(crate::semantic::knowledge::UniversityCourseId),
 }

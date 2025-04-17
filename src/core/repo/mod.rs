@@ -12,6 +12,8 @@ pub type RepoId = crate::util::hashing::Sha256;
 
 pub struct Repository {
     id: RepoId,
+    base_path: std::path::PathBuf,
+    is_home: bool,
     cache: cache::RepositoryCache,
 }
 
@@ -55,6 +57,8 @@ impl Repository {
 
         Self {
             id,
+            base_path,
+            is_home: false,
             cache: cache::RepositoryCache {
                 cache_file_path,
                 file_name_cache,
@@ -150,6 +154,19 @@ impl Repository {
 
     pub fn tick(&self) {
         self.save();
+    }
+
+    pub fn find_directory(&self, purpose: info::DirectoryPurpose) -> Option<std::path::PathBuf> {
+        match purpose {
+            info::DirectoryPurpose::UserDirectory(info::UserDirectory::Home) => {
+                if self.is_home {
+                    Some(self.base_path.clone())
+                } else {
+                    None
+                }
+            }
+            _ => None
+        }
     }
 }
 
