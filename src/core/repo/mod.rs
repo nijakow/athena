@@ -49,10 +49,10 @@ impl Repository {
         let cache_file_path = base_path.join("athena-cache.json");
 
         let resource_cache = if cache_file_path.exists() {
-            resource::ResourceCache::load_from_file(&cache_file_path)
-                .unwrap_or_else(|_| resource::ResourceCache::new())
+            resource::cache::ResourceCache::load_from_file(&cache_file_path)
+                .unwrap_or_else(|_| resource::cache::ResourceCache::new())
         } else {
-            resource::ResourceCache::new()
+            resource::cache::ResourceCache::new()
         };
 
         Self {

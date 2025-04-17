@@ -45,7 +45,15 @@ impl FileContent {
         &self.content
     }
 
+    pub fn content_as_string(&self) -> Option<String> {
+        String::from_utf8(self.content.clone()).ok()
+    }
+
     pub fn extract_content(self) -> Vec<u8> {
         self.content
+    }
+
+    pub fn extract_content_as_string(self) -> Option<String> {
+        String::from_utf8(self.content).ok()
     }
 }

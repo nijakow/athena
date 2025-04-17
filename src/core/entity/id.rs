@@ -37,7 +37,7 @@ impl Id {
         Id::from_string(id)
     }
 
-    pub(crate) fn for_resource(resource: &resource::Resource, cache: &mut resource::ResourceCache) -> Id {
+    pub(crate) fn for_resource(resource: &resource::Resource, cache: &mut resource::cache::ResourceCache) -> Id {
         if let Some(hash) = resource.content_hash(cache) {
             Id::from_sha256(hash.clone())
         } else {
