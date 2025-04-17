@@ -179,33 +179,14 @@ impl Resource {
         Ok(entity::file::FileContent::new(file_type, title, content))
     }
 
-    pub fn parse<T, E>(&self, parser_func: fn(FileContent) -> Result<T, E>) -> Result<T, Box<dyn std::error::Error>>
-    where
-        E: std::error::Error + 'static,
+    pub fn parse<T, E>(&self, parser_func: fn(FileContent) -> Result<T, E>) -> Result<T, ParseError<E>>
     {
-        let content = self.read_content()?;
-        parser_func(content).map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+        let content = self.read_content().map_err(|e| ParseError::Io(e))?;
+        parser_func(content).map_err(|e| ParseError::Parse(e))
     }
+}
 
-    pub fn read_to_obsidian_markdown(
-        &self,
-    ) -> Result<crate::formats::markdown::ObsidianDocument, Box<dyn std::error::Error>> {
-        let content = std::fs::read_to_string(&self.path)?;
-
-        let (metadata, content) = crate::util::split_metadata_from_content(content);
-
-        let metadata = metadata
-            .and_then(|m| yaml_rust2::YamlLoader::load_from_str(&m).ok())
-            .and_then(|mut docs| docs.pop());
-
-        match crate::formats::markdown::parser::parse_document(content) {
-            Ok(document) => {
-                Ok(crate::formats::markdown::ObsidianDocument {
-                    head: metadata,
-                    body: document,
-                })
-            }
-            Err(e) => Err(Box::new(e)),
-        }
-    }
+pub enum ParseError<E> {
+    Io(std::io::Error),
+    Parse(E),
 }

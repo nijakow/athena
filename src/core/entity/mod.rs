@@ -13,22 +13,24 @@ pub enum Entity {
 }
 
 impl Entity {
-    pub fn from_resource(resource: resource::Resource) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn from_resource(resource: resource::Resource) -> Result<Self, ()> {
         let metadata = resource.metadata();
 
         match metadata.resource_type {
             Some(resource::Type::Zettel(resource::types::ZettelType::Obsidian)) => {
-                let document = resource.read_to_obsidian_markdown()?;
-                let zettel = zettel::Zettel::from_obsidian_markdown(document)
-                    .map_err(|_| "Failed to parse Zettel")?;
-
-                Ok(Entity::Zettel(zettel))
+                match resource.parse(crate::formats::markdown::parse_obsidian_markdown) {
+                    Ok(document) => {
+                        let zettel = zettel::Zettel::from_obsidian_markdown(document)?;
+                        Ok(Entity::Zettel(zettel))
+                    }
+                    Err(_) => Err(()),
+                }
             }
             Some(_) => {
                 // TODO: Check file size and decide if it's too big to read into memory
-                Ok(Entity::File(resource.read_content()?))
+                resource.read_content().map(|content| Entity::File(content)).map_err(|_| ())
             }
-            None => Err("Unknown resource type".into()),
+            None => Err(()),
         }
     }
 }

@@ -123,3 +123,30 @@ impl From<Document> for ObsidianDocument {
         }
     }
 }
+
+
+pub fn parse_obsidian_markdown(
+    content: crate::core::entity::file::FileContent,
+) -> Result<ObsidianDocument, ()> {
+    match content.extract_content_as_string() {
+        Some(content) => {
+
+            let (metadata, content) = crate::util::split_metadata_from_content(content);
+
+            let metadata = metadata
+                .and_then(|m| yaml_rust2::YamlLoader::load_from_str(&m).ok())
+                .and_then(|mut docs| docs.pop());
+
+            match crate::formats::markdown::parser::parse_document(content) {
+                Ok(document) => {
+                    Ok(crate::formats::markdown::ObsidianDocument {
+                        head: metadata,
+                        body: document,
+                    })
+                }
+                Err(e) => Err(()),
+            }
+        }
+        None => Err(()),
+    }
+}
