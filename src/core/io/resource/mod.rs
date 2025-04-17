@@ -1,6 +1,7 @@
-use crate::core::entity::{self, file::FileContent};
+use crate::core::entity;
 
 pub mod cache;
+pub mod file;
 pub mod types;
 
 
@@ -167,7 +168,7 @@ impl Resource {
         std::fs::read_to_string(&self.path)
     }
 
-    pub fn read_content(&self) -> Result<entity::file::FileContent, std::io::Error> {
+    pub fn read_content(&self) -> Result<file::FileContent, std::io::Error> {
         let title = self
             .path
             .file_stem()
@@ -176,10 +177,10 @@ impl Resource {
         let content = self.read_to_bytes()?;
         let file_type = self.metadata().resource_type.unwrap_or(Type::Unknown);
 
-        Ok(entity::file::FileContent::new(file_type, title, content))
+        Ok(file::FileContent::new(file_type, title, content))
     }
 
-    pub fn parse<T, E>(&self, parser_func: fn(FileContent) -> Result<T, E>) -> Result<T, ParseError<E>>
+    pub fn parse<T, E>(&self, parser_func: fn(file::FileContent) -> Result<T, E>) -> Result<T, ParseError<E>>
     {
         let content = self.read_content().map_err(|e| ParseError::Io(e))?;
         parser_func(content).map_err(|e| ParseError::Parse(e))

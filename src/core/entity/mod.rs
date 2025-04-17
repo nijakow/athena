@@ -2,13 +2,12 @@ use super::io::resource;
 
 pub mod id;
 
-pub mod file;
 pub mod zettel;
 
 pub type Id = id::Id;
 
 pub enum Entity {
-    File(file::FileContent),
+    File(crate::core::io::resource::file::FileContent), // TODO: Rework this
     Zettel(zettel::Zettel),
 }
 
