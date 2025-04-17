@@ -122,6 +122,10 @@ impl Resource {
         Self { path }
     }
 
+    pub fn from_path_ref(path: &std::path::Path) -> Self {
+        Self::from_path(path.to_path_buf())
+    }
+
     pub fn metadata(&self) -> Metadata {
         let extension = self.path.extension().and_then(|e| e.to_str());
         let resource_type = extension.and_then(|e| Type::from_extension(e));

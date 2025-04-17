@@ -30,7 +30,7 @@ impl Vault {
     }
 
     pub fn list_entities(&self) -> Vec<entity::Id> {
-        self.volumes.list_entities()
+        self.volumes.list_entities().collect()
     }
 
     fn find_resource_for_id(&self, id: &entity::Id) -> Option<volt::resource::Resource> {

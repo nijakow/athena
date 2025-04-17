@@ -71,7 +71,9 @@ impl Volume {
     }
 
     pub fn list_files(&self) -> impl Iterator<Item = std::path::PathBuf> {
-        fn condition(entry: Result<walkdir::DirEntry, walkdir::Error>) -> Option<std::path::PathBuf> {
+        fn condition(
+            entry: Result<walkdir::DirEntry, walkdir::Error>,
+        ) -> Option<std::path::PathBuf> {
             let entry = entry.unwrap();
             if entry.file_type().is_file() {
                 Some(entry.into_path())
@@ -79,30 +81,25 @@ impl Volume {
                 None
             }
         }
-        
+
         walkdir::WalkDir::new(&self.base_path)
             .into_iter()
             .filter_map(condition)
     }
 
+    pub fn list_resources(&self) -> impl Iterator<Item = resource::Resource> {
+        self.list_files()
+            .map(|path| resource::Resource::from_path(path))
+    }
+
+    pub fn list_entities<'a>(&'a self) -> impl Iterator<Item = entity::Id> + 'a {
+        self.list_resources()
+            .map(move |resource| entity::Id::for_resource(&resource, &mut *self.cache.resource_cache.write().unwrap()))
+    }
+
     pub fn file_if_exists<S: ToString>(&self, name: S) -> Option<std::path::PathBuf> {
         let name = name.to_string();
         self.cache.file_name_cache.get(&name).cloned()
-    }
-
-    fn list_resources(&self) -> Vec<resource::Resource> {
-        self.list_files()
-            .map(|path| resource::Resource::from_path(path.clone()))
-            .collect()
-    }
-
-    pub fn list_entities(&self) -> Vec<entity::Id> {
-        self.list_resources()
-            .iter()
-            .map(|resource| {
-                entity::Id::for_resource(resource, &mut *self.cache.resource_cache.write().unwrap())
-            })
-            .collect()
     }
 
     fn file_by_short_name(&self, name: &str) -> Option<std::path::PathBuf> {
@@ -190,11 +187,16 @@ impl Volumes {
         Volumes { vols }
     }
 
-    pub fn list_entities(&self) -> Vec<entity::Id> {
+    pub fn list_resources<'a>(&'a self) -> impl Iterator<Item = resource::Resource> + 'a {
+        self.vols
+            .iter()
+            .flat_map(|storage| storage.list_resources())
+    }
+
+    pub fn list_entities<'a>(&'a self) -> impl Iterator<Item = entity::Id> + 'a {
         self.vols
             .iter()
             .flat_map(|storage| storage.list_entities())
-            .collect()
     }
 
     pub fn find_resource_for_id(&self, id: &entity::Id) -> Option<resource::Resource> {
