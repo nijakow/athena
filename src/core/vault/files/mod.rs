@@ -1,6 +1,7 @@
 use crate::core::entity;
 
-pub mod storage;
+use crate::core::repo as storage;
+
 
 pub struct Files {
     storages: Vec<storage::Storage>,

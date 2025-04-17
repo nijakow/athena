@@ -2,6 +2,7 @@ use super::{
     config,
     entity::{self, zettel},
     io::resource,
+    repo
 };
 
 mod files;
@@ -15,9 +16,9 @@ pub type VaultOpenResult = Result<Vault, ()>;
 impl Vault {
     fn new(config: config::Config) -> Vault {
         let storages = vec![
-            files::storage::Storage::new(
+            repo::Storage::new(
                 config.vault_path.unwrap(),
-                files::storage::Flags::new().with_zettels(),
+                repo::Flags::new().with_zettels(),
             )
         ];
 

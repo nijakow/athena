@@ -35,7 +35,7 @@ fn generate_metadata_box(header: &zettel::Header) -> maud::PreEscaped<String> {
                                 }
                             }
                         },
-                        Yaml::Hash(hash) => yaml_to_table(value),
+                        Yaml::Hash(_hash) => yaml_to_table(value),
                         Yaml::Integer(i) => maud::html! {
                             span { (i) }
                         },
