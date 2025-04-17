@@ -5,6 +5,9 @@ use crate::core::{entity, io::resource};
 pub mod info;
 
 
+pub type RepoId = crate::util::hashing::Sha256;
+
+
 pub struct Flags {
     pub has_zettels: bool,
 }
@@ -21,6 +24,7 @@ impl Flags {
 }
 
 pub struct Repository {
+    id: RepoId,
     cache_file_path: std::path::PathBuf,
     file_name_cache: std::collections::HashMap<String, std::path::PathBuf>,
     resource_cache: RwLock<resource::ResourceCache>,
@@ -28,6 +32,8 @@ pub struct Repository {
 
 impl Repository {
     pub fn new(base_path: std::path::PathBuf, _flags: Flags) -> Self {
+        let id = RepoId::hash_string(base_path.to_string_lossy().to_string());
+
         let file_name_cache = {
             let mut files = std::collections::HashMap::new();
             let mut dirs = vec![base_path.clone()];
@@ -63,10 +69,15 @@ impl Repository {
         };
 
         Self {
+            id,
             cache_file_path,
             file_name_cache,
             resource_cache: RwLock::new(resource_cache),
         }
+    }
+
+    pub fn id(&self) -> &RepoId {
+        &self.id
     }
 
     pub fn list_files(&self) -> Vec<std::path::PathBuf> {

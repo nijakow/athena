@@ -33,6 +33,10 @@ impl Sha256 {
         Sha256::from_sha256_digest(hasher)
     }
 
+    pub(crate) fn hash_string<S: ToString>(string: S) -> Self {
+        Sha256::hash_bytes(string.to_string().as_bytes())
+    }
+
     pub(crate) fn as_string(&self) -> String {
         hex::encode(&self.bytes)
     }
