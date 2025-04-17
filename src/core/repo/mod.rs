@@ -2,6 +2,9 @@ use std::sync::RwLock;
 
 use crate::core::{entity, io::resource};
 
+pub mod info;
+
+
 pub struct Flags {
     pub has_zettels: bool,
 }
@@ -149,5 +152,36 @@ impl Repository {
 
     pub fn tick(&self) {
         self.save();
+    }
+}
+
+
+pub struct Repositories {
+    repos: Vec<Repository>,
+}
+
+impl Repositories {
+    pub fn new(repos: Vec<Repository>) -> Self {
+        Repositories { repos }
+    }
+
+    pub fn list_entities(&self) -> Vec<entity::Id> {
+        self.repos
+            .iter()
+            .flat_map(|storage| storage.list_entities())
+            .collect()
+    }
+
+    pub fn find_resource_for_id(&self, id: &entity::Id) -> Option<crate::core::io::resource::Resource> {
+        self.repos
+            .iter()
+            .filter_map(|storage| storage.resource_by_id(id))
+            .next()
+    }
+
+    pub fn tick(&self) {
+        for storage in &self.repos {
+            storage.tick();
+        }
     }
 }

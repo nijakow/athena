@@ -5,17 +5,15 @@ use super::{
     repo
 };
 
-mod files;
-
 pub struct Vault {
-    files: files::Files,
+    repos: repo::Repositories,
 }
 
 pub type VaultOpenResult = Result<Vault, ()>;
 
 impl Vault {
     fn new(config: config::Config) -> Vault {
-        let storages = vec![
+        let repos = vec![
             repo::Repository::new(
                 config.vault_path.unwrap(),
                 repo::Flags::new().with_zettels(),
@@ -23,7 +21,7 @@ impl Vault {
         ];
 
         Vault {
-            files: files::Files::new(storages),
+            repos: repo::Repositories::new(repos),
         }
     }
 
@@ -32,11 +30,11 @@ impl Vault {
     }
 
     pub fn list_entities(&self) -> Vec<entity::Id> {
-        self.files.list_entities()
+        self.repos.list_entities()
     }
 
     fn find_resource_for_id(&self, id: &entity::Id) -> Option<resource::Resource> {
-        self.files.find_resource_for_id(id)
+        self.repos.find_resource_for_id(id)
     }
 
     pub fn load_resource(&self, id: &entity::Id) -> Option<resource::Resource> {
@@ -72,6 +70,6 @@ impl Vault {
     }
 
     pub fn tick(&self) {
-        self.files.tick();
+        self.repos.tick();
     }
 }
