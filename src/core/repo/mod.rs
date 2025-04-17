@@ -2,36 +2,21 @@ use std::sync::RwLock;
 
 use crate::core::{entity, io::resource};
 
+pub mod cache;
+pub mod flags;
 pub mod info;
 
 
 pub type RepoId = crate::util::hashing::Sha256;
 
 
-pub struct Flags {
-    pub has_zettels: bool,
-}
-
-impl Flags {
-    pub fn new() -> Self {
-        Flags { has_zettels: false }
-    }
-
-    pub fn with_zettels(mut self) -> Self {
-        self.has_zettels = true;
-        self
-    }
-}
-
 pub struct Repository {
     id: RepoId,
-    cache_file_path: std::path::PathBuf,
-    file_name_cache: std::collections::HashMap<String, std::path::PathBuf>,
-    resource_cache: RwLock<resource::ResourceCache>,
+    cache: cache::RepositoryCache,
 }
 
 impl Repository {
-    pub fn new(base_path: std::path::PathBuf, _flags: Flags) -> Self {
+    pub fn new(base_path: std::path::PathBuf, _flags: flags::Flags) -> Self {
         let id = RepoId::hash_string(base_path.to_string_lossy().to_string());
 
         let file_name_cache = {
@@ -70,9 +55,11 @@ impl Repository {
 
         Self {
             id,
-            cache_file_path,
-            file_name_cache,
-            resource_cache: RwLock::new(resource_cache),
+            cache: cache::RepositoryCache {
+                cache_file_path,
+                file_name_cache,
+                resource_cache: RwLock::new(resource_cache),
+            },
         }
     }
 
@@ -81,12 +68,12 @@ impl Repository {
     }
 
     pub fn list_files(&self) -> Vec<std::path::PathBuf> {
-        self.file_name_cache.values().cloned().collect()
+        self.cache.file_name_cache.values().cloned().collect()
     }
 
     pub fn file_if_exists<S: ToString>(&self, name: S) -> Option<std::path::PathBuf> {
         let name = name.to_string();
-        self.file_name_cache.get(&name).cloned()
+        self.cache.file_name_cache.get(&name).cloned()
     }
 
     fn list_resources(&self) -> Vec<resource::Resource> {
@@ -100,7 +87,7 @@ impl Repository {
         self.list_resources()
             .iter()
             .map(|resource| {
-                entity::Id::for_resource(resource, &mut *self.resource_cache.write().unwrap())
+                entity::Id::for_resource(resource, &mut *self.cache.resource_cache.write().unwrap())
             })
             .collect()
     }
@@ -142,7 +129,7 @@ impl Repository {
             entity::Id::Sha256(sha256) => {
                 for resource in self.list_resources() {
                     if let Some(hash) =
-                        resource.content_hash(&mut *self.resource_cache.write().unwrap())
+                        resource.content_hash(&mut *self.cache.resource_cache.write().unwrap())
                     {
                         if hash == *sha256 {
                             return Some(resource);
@@ -157,8 +144,8 @@ impl Repository {
     }
 
     fn save(&self) {
-        let resource_cache = self.resource_cache.read().unwrap();
-        resource_cache.save_to_file(&self.cache_file_path).unwrap();
+        let resource_cache = self.cache.resource_cache.read().unwrap();
+        resource_cache.save_to_file(&self.cache.cache_file_path).unwrap();
     }
 
     pub fn tick(&self) {

@@ -16,7 +16,7 @@ impl Vault {
         let repos = vec![
             repo::Repository::new(
                 config.vault_path.unwrap(),
-                repo::Flags::new().with_zettels(),
+                repo::flags::Flags::new().with_zettels(),
             )
         ];
 
