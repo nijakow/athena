@@ -92,9 +92,15 @@ impl Volume {
             .map(|path| resource::Resource::from_path(path))
     }
 
-    pub fn list_entities<'a>(&'a self) -> impl Iterator<Item = entity::Id> + 'a {
+    pub fn map_resource_func<'a, T>(
+        &'a self,
+        func: impl Fn(&resource::Resource, &mut resource::cache::ResourceCache) -> T + 'a,
+    ) -> impl Iterator<Item = T> + 'a {
         self.list_resources()
-            .map(move |resource| entity::Id::for_resource(&resource, &mut *self.cache.resource_cache.write().unwrap()))
+            .map(move |resource| {
+                let mut resource_cache = self.cache.resource_cache.write().unwrap();
+                func(&resource, &mut *resource_cache)
+            })
     }
 
     pub fn file_if_exists<S: ToString>(&self, name: S) -> Option<std::path::PathBuf> {
@@ -193,10 +199,14 @@ impl Volumes {
             .flat_map(|storage| storage.list_resources())
     }
 
-    pub fn list_entities<'a>(&'a self) -> impl Iterator<Item = entity::Id> + 'a {
+    pub fn map_resource_func<'a, T>(
+        &'a self,
+        func: impl Fn(&resource::Resource, &mut resource::cache::ResourceCache) -> T + Clone + 'a
+    ) -> impl Iterator<Item = T> + 'a
+    {
         self.vols
             .iter()
-            .flat_map(|storage| storage.list_entities())
+            .flat_map(move |storage| storage.map_resource_func(func.clone()))
     }
 
     pub fn find_resource_for_id(&self, id: &entity::Id) -> Option<resource::Resource> {
