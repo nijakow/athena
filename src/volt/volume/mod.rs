@@ -7,9 +7,7 @@ pub mod cache;
 pub mod flags;
 pub mod info;
 
-
 pub type VolumeId = crate::util::hashing::Sha256;
-
 
 pub struct Volume {
     id: VolumeId,
@@ -72,8 +70,19 @@ impl Volume {
         &self.id
     }
 
-    pub fn list_files(&self) -> Vec<std::path::PathBuf> {
-        self.cache.file_name_cache.values().cloned().collect()
+    pub fn list_files(&self) -> impl Iterator<Item = std::path::PathBuf> {
+        fn condition(entry: Result<walkdir::DirEntry, walkdir::Error>) -> Option<std::path::PathBuf> {
+            let entry = entry.unwrap();
+            if entry.file_type().is_file() {
+                Some(entry.into_path())
+            } else {
+                None
+            }
+        }
+        
+        walkdir::WalkDir::new(&self.base_path)
+            .into_iter()
+            .filter_map(condition)
     }
 
     pub fn file_if_exists<S: ToString>(&self, name: S) -> Option<std::path::PathBuf> {
@@ -83,7 +92,6 @@ impl Volume {
 
     fn list_resources(&self) -> Vec<resource::Resource> {
         self.list_files()
-            .iter()
             .map(|path| resource::Resource::from_path(path.clone()))
             .collect()
     }
@@ -150,7 +158,9 @@ impl Volume {
 
     fn save(&self) {
         let resource_cache = self.cache.resource_cache.read().unwrap();
-        resource_cache.save_to_file(&self.cache.cache_file_path).unwrap();
+        resource_cache
+            .save_to_file(&self.cache.cache_file_path)
+            .unwrap();
     }
 
     pub fn tick(&self) {
@@ -166,11 +176,10 @@ impl Volume {
                     None
                 }
             }
-            _ => None
+            _ => None,
         }
     }
 }
-
 
 pub struct Volumes {
     vols: Vec<Volume>,
