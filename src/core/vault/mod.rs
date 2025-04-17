@@ -29,8 +29,8 @@ impl Vault {
         Ok(Self::new(config))
     }
 
-    pub fn list_entities(&self) -> Vec<entity::Id> {
-        self.volumes.map_resource_func(entity::Id::for_resource).collect()
+    pub fn list_entities<'a>(&'a self) -> impl Iterator<Item = entity::Id> + 'a {
+        self.volumes.map_resource_func(entity::Id::for_resource)
     }
 
     fn find_resource_for_id(&self, id: &entity::Id) -> Option<volt::resource::Resource> {
