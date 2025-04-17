@@ -166,7 +166,7 @@ impl Resource {
         std::fs::read_to_string(&self.path)
     }
 
-    pub fn read_to_file(&self) -> Result<entity::file::File, std::io::Error> {
+    pub fn read_content(&self) -> Result<entity::file::FileContent, std::io::Error> {
         let title = self
             .path
             .file_stem()
@@ -175,7 +175,7 @@ impl Resource {
         let content = self.read_to_bytes()?;
         let file_type = self.metadata().resource_type.unwrap_or(Type::Unknown);
 
-        Ok(entity::file::File::new(file_type, title, content))
+        Ok(entity::file::FileContent::new(file_type, title, content))
     }
 
     pub fn read_to_obsidian_markdown(

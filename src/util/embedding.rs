@@ -68,7 +68,7 @@ pub fn generate_embed_for_url_or_not_displayed(url: &url::Url) -> maud::PreEscap
 }
 
 pub fn embed_file_for_id<S: ToString>(
-    file: &entity::file::File,
+    file: &entity::file::FileContent,
     id: &entity::Id,
     title: S,
     download: bool,

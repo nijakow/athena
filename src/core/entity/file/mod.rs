@@ -24,12 +24,12 @@ impl FileMetadata {
 }
 
 
-pub struct File {
+pub struct FileContent {
     metadata: FileMetadata,
     content: Vec<u8>,
 }
 
-impl File {
+impl FileContent {
     pub fn new(file_type: Type, title: Option<String>, content: Vec<u8>) -> Self {
         Self {
             metadata: FileMetadata::new(file_type, title),

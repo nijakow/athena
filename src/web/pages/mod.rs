@@ -47,7 +47,7 @@ pub fn generate_download_resource(resource: resource::Resource) -> HttpResponse 
     HttpResponse::Ok().content_type(mime).body(content)
 }
 
-pub fn generate_show_file(id: entity::Id, file: entity::file::File) -> HttpResponse {
+pub fn generate_show_file(id: entity::Id, file: entity::file::FileContent) -> HttpResponse {
     let title = file
         .metadata()
         .title()

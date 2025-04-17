@@ -8,7 +8,7 @@ pub mod zettel;
 pub type Id = id::Id;
 
 pub enum Entity {
-    File(file::File),
+    File(file::FileContent),
     Zettel(zettel::Zettel),
 }
 
@@ -26,7 +26,7 @@ impl Entity {
             }
             Some(_) => {
                 // TODO: Check file size and decide if it's too big to read into memory
-                Ok(Entity::File(resource.read_to_file()?))
+                Ok(Entity::File(resource.read_content()?))
             }
             None => Err("Unknown resource type".into()),
         }
