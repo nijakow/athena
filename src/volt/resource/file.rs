@@ -1,6 +1,5 @@
 use super::Type;
 
-
 pub struct FileMetadata {
     file_type: Type,
     title: Option<String>,

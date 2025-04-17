@@ -144,7 +144,7 @@ pub fn parse_obsidian_markdown(
                         body: document,
                     })
                 }
-                Err(e) => Err(()),
+                Err(_) => Err(()),
             }
         }
         None => Err(()),
