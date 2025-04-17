@@ -1,4 +1,5 @@
-use crate::core::io::resource::Type;
+use super::Type;
+
 
 pub struct FileMetadata {
     file_type: Type,

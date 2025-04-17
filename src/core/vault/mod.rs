@@ -1,12 +1,12 @@
 use super::{
     config,
     entity::{self, zettel},
-    io::resource,
-    repo
 };
 
+use crate::volt;
+
 pub struct Vault {
-    repos: repo::Repositories,
+    repos: volt::repo::Repositories,
 }
 
 pub type VaultOpenResult = Result<Vault, ()>;
@@ -14,14 +14,14 @@ pub type VaultOpenResult = Result<Vault, ()>;
 impl Vault {
     fn new(config: config::Config) -> Vault {
         let repos = vec![
-            repo::Repository::new(
+            volt::repo::Repository::new(
                 config.vault_path.unwrap(),
-                repo::flags::Flags::new().with_zettels(),
+                volt::repo::flags::Flags::new().with_zettels(),
             )
         ];
 
         Vault {
-            repos: repo::Repositories::new(repos),
+            repos: volt::repo::Repositories::new(repos),
         }
     }
 
@@ -33,11 +33,11 @@ impl Vault {
         self.repos.list_entities()
     }
 
-    fn find_resource_for_id(&self, id: &entity::Id) -> Option<resource::Resource> {
+    fn find_resource_for_id(&self, id: &entity::Id) -> Option<volt::resource::Resource> {
         self.repos.find_resource_for_id(id)
     }
 
-    pub fn load_resource(&self, id: &entity::Id) -> Option<resource::Resource> {
+    pub fn load_resource(&self, id: &entity::Id) -> Option<volt::resource::Resource> {
         self.find_resource_for_id(id)
     }
 

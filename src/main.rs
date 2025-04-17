@@ -3,6 +3,7 @@ pub mod core;
 pub mod formats;
 pub mod semantic;
 pub mod util;
+pub mod volt;
 pub mod web;
 
 

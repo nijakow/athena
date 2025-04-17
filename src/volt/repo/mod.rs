@@ -1,6 +1,7 @@
 use std::sync::RwLock;
 
-use crate::core::{entity, io::resource};
+use crate::core::entity;
+use crate::volt::resource;
 
 pub mod cache;
 pub mod flags;
@@ -187,7 +188,7 @@ impl Repositories {
             .collect()
     }
 
-    pub fn find_resource_for_id(&self, id: &entity::Id) -> Option<crate::core::io::resource::Resource> {
+    pub fn find_resource_for_id(&self, id: &entity::Id) -> Option<resource::Resource> {
         self.repos
             .iter()
             .filter_map(|storage| storage.resource_by_id(id))

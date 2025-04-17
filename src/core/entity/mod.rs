@@ -1,4 +1,5 @@
-use super::io::resource;
+use crate::volt;
+
 
 pub mod id;
 
@@ -7,16 +8,16 @@ pub mod zettel;
 pub type Id = id::Id;
 
 pub enum Entity {
-    File(crate::core::io::resource::file::FileContent), // TODO: Rework this
+    File(volt::resource::file::FileContent), // TODO: Rework this
     Zettel(zettel::Zettel),
 }
 
 impl Entity {
-    pub fn from_resource(resource: resource::Resource) -> Result<Self, ()> {
+    pub fn from_resource(resource: volt::resource::Resource) -> Result<Self, ()> {
         let metadata = resource.metadata();
 
         match metadata.resource_type {
-            Some(resource::Type::Zettel(resource::types::ZettelType::Obsidian)) => {
+            Some(volt::resource::Type::Zettel(volt::resource::types::ZettelType::Obsidian)) => {
                 match resource.parse(crate::formats::markdown::parse_obsidian_markdown) {
                     Ok(document) => {
                         let zettel = zettel::Zettel::from_obsidian_markdown(document)?;

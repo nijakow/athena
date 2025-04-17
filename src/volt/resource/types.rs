@@ -34,4 +34,3 @@ pub enum VideoType {
     Webm,
     Ogg,
 }
-

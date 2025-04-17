@@ -4,9 +4,10 @@ use std::sync::Arc;
 
 use crate::core::{
     entity,
-    io::resource,
     vault,
 };
+
+use crate::volt;
 
 pub mod error;
 pub mod content;
@@ -30,7 +31,7 @@ pub fn decorate_maud_html(title: &str, content: maud::PreEscaped<String>) -> mau
 
 
 
-pub fn generate_download_resource(resource: resource::Resource) -> HttpResponse {
+pub fn generate_download_resource(resource: volt::resource::Resource) -> HttpResponse {
     let mime = resource
         .metadata()
         .resource_type
@@ -47,7 +48,7 @@ pub fn generate_download_resource(resource: resource::Resource) -> HttpResponse 
     HttpResponse::Ok().content_type(mime).body(content)
 }
 
-pub fn generate_show_file(id: entity::Id, file: crate::core::io::resource::file::FileContent) -> HttpResponse {
+pub fn generate_show_file(id: entity::Id, file: volt::resource::file::FileContent) -> HttpResponse {
     let title = file
         .metadata()
         .title()

@@ -1,6 +1,6 @@
 use std::sync::RwLock;
 
-use crate::core::io::resource;
+use crate::volt::resource;
 
 pub struct RepositoryCache {
     pub cache_file_path: std::path::PathBuf,
