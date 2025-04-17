@@ -17,13 +17,13 @@ impl Flags {
     }
 }
 
-pub struct Storage {
+pub struct Repository {
     cache_file_path: std::path::PathBuf,
     file_name_cache: std::collections::HashMap<String, std::path::PathBuf>,
     resource_cache: RwLock<resource::ResourceCache>,
 }
 
-impl Storage {
+impl Repository {
     pub fn new(base_path: std::path::PathBuf, _flags: Flags) -> Self {
         let file_name_cache = {
             let mut files = std::collections::HashMap::new();

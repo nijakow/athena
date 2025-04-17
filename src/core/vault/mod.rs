@@ -16,7 +16,7 @@ pub type VaultOpenResult = Result<Vault, ()>;
 impl Vault {
     fn new(config: config::Config) -> Vault {
         let storages = vec![
-            repo::Storage::new(
+            repo::Repository::new(
                 config.vault_path.unwrap(),
                 repo::Flags::new().with_zettels(),
             )
