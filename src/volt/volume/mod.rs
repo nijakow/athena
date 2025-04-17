@@ -8,19 +8,19 @@ pub mod flags;
 pub mod info;
 
 
-pub type RepoId = crate::util::hashing::Sha256;
+pub type VolumeId = crate::util::hashing::Sha256;
 
 
-pub struct Repository {
-    id: RepoId,
+pub struct Volume {
+    id: VolumeId,
     base_path: std::path::PathBuf,
     is_home: bool,
-    cache: cache::RepositoryCache,
+    cache: cache::VolumeCache,
 }
 
-impl Repository {
+impl Volume {
     pub fn new(base_path: std::path::PathBuf, _flags: flags::Flags) -> Self {
-        let id = RepoId::hash_string(base_path.to_string_lossy().to_string());
+        let id = VolumeId::hash_string(base_path.to_string_lossy().to_string());
 
         let file_name_cache = {
             let mut files = std::collections::HashMap::new();
@@ -60,7 +60,7 @@ impl Repository {
             id,
             base_path,
             is_home: false,
-            cache: cache::RepositoryCache {
+            cache: cache::VolumeCache {
                 cache_file_path,
                 file_name_cache,
                 resource_cache: RwLock::new(resource_cache),
@@ -68,7 +68,7 @@ impl Repository {
         }
     }
 
-    pub fn id(&self) -> &RepoId {
+    pub fn id(&self) -> &VolumeId {
         &self.id
     }
 
@@ -172,31 +172,31 @@ impl Repository {
 }
 
 
-pub struct Repositories {
-    repos: Vec<Repository>,
+pub struct Volumes {
+    vols: Vec<Volume>,
 }
 
-impl Repositories {
-    pub fn new(repos: Vec<Repository>) -> Self {
-        Repositories { repos }
+impl Volumes {
+    pub fn new(vols: Vec<Volume>) -> Self {
+        Volumes { vols }
     }
 
     pub fn list_entities(&self) -> Vec<entity::Id> {
-        self.repos
+        self.vols
             .iter()
             .flat_map(|storage| storage.list_entities())
             .collect()
     }
 
     pub fn find_resource_for_id(&self, id: &entity::Id) -> Option<resource::Resource> {
-        self.repos
+        self.vols
             .iter()
             .filter_map(|storage| storage.resource_by_id(id))
             .next()
     }
 
     pub fn tick(&self) {
-        for storage in &self.repos {
+        for storage in &self.vols {
             storage.tick();
         }
     }

@@ -6,22 +6,22 @@ use super::{
 use crate::volt;
 
 pub struct Vault {
-    repos: volt::repo::Repositories,
+    volumes: volt::volume::Volumes,
 }
 
 pub type VaultOpenResult = Result<Vault, ()>;
 
 impl Vault {
     fn new(config: config::Config) -> Vault {
-        let repos = vec![
-            volt::repo::Repository::new(
+        let volumes = vec![
+            volt::volume::Volume::new(
                 config.vault_path.unwrap(),
-                volt::repo::flags::Flags::new().with_zettels(),
+                volt::volume::flags::Flags::new().with_zettels(),
             )
         ];
 
         Vault {
-            repos: volt::repo::Repositories::new(repos),
+            volumes: volt::volume::Volumes::new(volumes),
         }
     }
 
@@ -30,11 +30,11 @@ impl Vault {
     }
 
     pub fn list_entities(&self) -> Vec<entity::Id> {
-        self.repos.list_entities()
+        self.volumes.list_entities()
     }
 
     fn find_resource_for_id(&self, id: &entity::Id) -> Option<volt::resource::Resource> {
-        self.repos.find_resource_for_id(id)
+        self.volumes.find_resource_for_id(id)
     }
 
     pub fn load_resource(&self, id: &entity::Id) -> Option<volt::resource::Resource> {
@@ -70,6 +70,6 @@ impl Vault {
     }
 
     pub fn tick(&self) {
-        self.repos.tick();
+        self.volumes.tick();
     }
 }

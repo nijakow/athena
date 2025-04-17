@@ -1,3 +1,3 @@
 
-pub mod repo;
+pub mod volume;
 pub mod resource;
