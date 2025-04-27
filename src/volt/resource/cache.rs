@@ -50,10 +50,8 @@ pub struct ResourceCacheSnapshot {
 impl crate::util::snapshotting::Snapshottable for ResourceCache {
     type Snapshot = ResourceCacheSnapshot;
     
-    fn from_snapshot(snapshot: Self::Snapshot) -> Self {
-        ResourceCache {
-            hashes: snapshot.hashes,
-        }
+    fn from_snapshot(&mut self, snapshot: Self::Snapshot) {
+        self.hashes = snapshot.hashes;
     }
     
     fn take_snapshot(&self) -> Self::Snapshot {

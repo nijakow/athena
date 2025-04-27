@@ -184,6 +184,19 @@ impl Volume {
     }
 }
 
+impl crate::util::snapshotting::Snapshottable for Volume {
+    type Snapshot = cache::VolumeCacheSnapshot;
+
+    fn from_snapshot(&mut self, snapshot: Self::Snapshot) {
+        self.cache.from_snapshot(snapshot);
+    }
+
+    fn take_snapshot(&self) -> Self::Snapshot {
+        self.cache.take_snapshot()
+    }
+}
+
+
 pub struct Volumes {
     vols: Vec<Volume>,
 }
@@ -191,6 +204,18 @@ pub struct Volumes {
 impl Volumes {
     pub fn new(vols: Vec<Volume>) -> Self {
         Volumes { vols }
+    }
+
+    pub fn volume_by_id(&self, id: &VolumeId) -> Option<&Volume> {
+        self.vols
+            .iter()
+            .find(|volume| volume.id() == id)
+    }
+
+    pub fn volume_by_id_mut(&mut self, id: &VolumeId) -> Option<&mut Volume> {
+        self.vols
+            .iter_mut()
+            .find(|volume| volume.id() == id)
     }
 
     pub fn list_resources<'a>(&'a self) -> impl Iterator<Item = resource::Resource> + 'a {
@@ -220,5 +245,27 @@ impl Volumes {
         for storage in &self.vols {
             storage.tick();
         }
+    }
+}
+
+impl crate::util::snapshotting::Snapshottable for Volumes {
+    type Snapshot = cache::VolumesCacheSnapshot;
+    
+    fn from_snapshot(&mut self, snapshot: Self::Snapshot) {
+        for (id, volume_snapshot) in snapshot.volumes {
+            if let Some(volume) = self.volume_by_id_mut(&id) {
+                volume.from_snapshot(volume_snapshot);
+            }
+        }
+    }
+    
+    fn take_snapshot(&self) -> Self::Snapshot {
+        let volumes = self
+            .vols
+            .iter()
+            .map(|volume| (volume.id().clone(), volume.take_snapshot()))
+            .collect();
+
+        cache::VolumesCacheSnapshot { volumes }
     }
 }

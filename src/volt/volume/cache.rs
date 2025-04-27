@@ -9,31 +9,28 @@ pub struct VolumeCache {
     pub resource_cache: RwLock<resource::cache::ResourceCache>,
 }
 
-pub struct CacheSnapshot {
+pub struct VolumeCacheSnapshot {
     pub file_name_cache: std::collections::HashMap<String, std::path::PathBuf>,
     pub resource_cache: resource::cache::ResourceCacheSnapshot,
 }
 
 impl crate::util::snapshotting::Snapshottable for VolumeCache {
-    type Snapshot = CacheSnapshot;
+    type Snapshot = VolumeCacheSnapshot;
 
-    fn from_snapshot(snapshot: Self::Snapshot) -> Self {
-        VolumeCache {
-            cache_file_path: std::path::PathBuf::new(),
-            file_name_cache: snapshot.file_name_cache,
-            resource_cache: RwLock::new(resource::cache::ResourceCache::from_snapshot(snapshot.resource_cache)),
-        }
+    fn from_snapshot(&mut self, snapshot: Self::Snapshot) {
+        self.file_name_cache = snapshot.file_name_cache;
+        self.resource_cache.write().unwrap().from_snapshot(snapshot.resource_cache);
     }
 
     fn take_snapshot(&self) -> Self::Snapshot {
-        CacheSnapshot {
+        VolumeCacheSnapshot {
             file_name_cache: self.file_name_cache.clone(),
             resource_cache: self.resource_cache.read().unwrap().take_snapshot(),
         }
     }
 }
 
-impl serde::Serialize for CacheSnapshot {
+impl serde::Serialize for VolumeCacheSnapshot {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -45,7 +42,7 @@ impl serde::Serialize for CacheSnapshot {
     }
 }
 
-impl<'de> serde::Deserialize<'de> for CacheSnapshot {
+impl<'de> serde::Deserialize<'de> for VolumeCacheSnapshot {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -57,7 +54,7 @@ impl<'de> serde::Deserialize<'de> for CacheSnapshot {
         }
 
         let helper = CacheSnapshotHelper::deserialize(deserializer)?;
-        Ok(CacheSnapshot {
+        Ok(VolumeCacheSnapshot {
             file_name_cache: helper.file_name_cache,
             resource_cache: helper.resource_cache,
         })
@@ -66,5 +63,5 @@ impl<'de> serde::Deserialize<'de> for CacheSnapshot {
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct VolumesCacheSnapshot {
-    pub volumes: std::collections::HashMap<crate::volt::volume::VolumeId, CacheSnapshot>,
+    pub volumes: std::collections::HashMap<crate::volt::volume::VolumeId, VolumeCacheSnapshot>,
 }
