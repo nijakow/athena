@@ -13,6 +13,8 @@ pub type VaultOpenResult = Result<Vault, ()>;
 
 impl Vault {
     fn new(config: config::Config) -> Vault {
+        let snapshot_path = config.snapshot_path();
+        
         let volumes = vec![
             volt::volume::Volume::new(
                 config.vault_path.unwrap(),
@@ -21,7 +23,7 @@ impl Vault {
         ];
 
         Vault {
-            volumes: volt::volume::Volumes::new(volumes),
+            volumes: volt::volume::Volumes::new(snapshot_path, volumes),
         }
     }
 

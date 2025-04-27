@@ -45,21 +45,13 @@ impl Volume {
             files
         };
 
-        let cache_file_path = base_path.join("athena-cache.json");
-
-        let resource_cache = if cache_file_path.exists() {
-            resource::cache::ResourceCache::load_from_file(&cache_file_path)
-                .unwrap_or_else(|_| resource::cache::ResourceCache::new())
-        } else {
-            resource::cache::ResourceCache::new()
-        };
+        let resource_cache = resource::cache::ResourceCache::new();
 
         Self {
             id,
             base_path,
             is_home: false,
             cache: cache::VolumeCache {
-                cache_file_path,
                 file_name_cache,
                 resource_cache: RwLock::new(resource_cache),
             },
@@ -159,15 +151,8 @@ impl Volume {
         }
     }
 
-    fn save(&self) {
-        let resource_cache = self.cache.resource_cache.read().unwrap();
-        resource_cache
-            .save_to_file(&self.cache.cache_file_path)
-            .unwrap();
-    }
-
     pub fn tick(&self) {
-        self.save();
+        // Do nothing
     }
 
     pub fn find_directory(&self, purpose: info::DirectoryPurpose) -> Option<std::path::PathBuf> {
@@ -198,12 +183,29 @@ impl crate::util::snapshotting::Snapshottable for Volume {
 
 
 pub struct Volumes {
+    snapshot_path: std::path::PathBuf,
     vols: Vec<Volume>,
 }
 
 impl Volumes {
-    pub fn new(vols: Vec<Volume>) -> Self {
-        Volumes { vols }
+    pub fn new(snapshot_path: std::path::PathBuf, vols: Vec<Volume>) -> Self {
+        let mut volumes = Volumes { snapshot_path, vols };
+
+        fn load_snapshot(path: &std::path::Path) -> Option<cache::VolumesCacheSnapshot> {
+            let snapshot = cache::VolumesCacheSnapshot::load_from_file(path).ok()?;
+
+            Some(snapshot)
+        }
+
+        if let Some(snapshot) = load_snapshot(&volumes.snapshot_path) {
+            use crate::util::snapshotting::Snapshottable;
+
+            println!("Loading snapshot into volumes...");
+            
+            volumes.from_snapshot(snapshot);
+        }
+
+        volumes
     }
 
     pub fn volume_by_id(&self, id: &VolumeId) -> Option<&Volume> {
@@ -246,7 +248,7 @@ impl Volumes {
 
         let snapshot = self.take_snapshot();
 
-        let path = std::path::PathBuf::from("/tmp/snapshot.json");
+        let path = &self.snapshot_path;
 
         snapshot.save_to_file(&path).unwrap_or_else(|_| {
             eprintln!("Failed to save snapshot to {:?}", path);
