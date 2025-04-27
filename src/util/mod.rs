@@ -1,5 +1,6 @@
 pub mod embedding;
 pub mod hashing;
+pub mod snapshotting;
 
 pub fn split_metadata_from_content(content: String) -> (Option<String>, String) {
     let (header, body) = content
