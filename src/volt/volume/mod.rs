@@ -17,6 +17,18 @@ pub struct Volume {
 }
 
 impl Volume {
+    fn is_path_excluded(path: &std::path::Path) -> bool {
+        // Check if any of the subpaths start with "."
+        for component in path.components() {
+            if let std::path::Component::Normal(name) = component {
+                if name.to_string_lossy().starts_with('.') {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
     pub fn new(base_path: std::path::PathBuf, _flags: flags::Flags) -> Self {
         let id = VolumeId::hash_string(base_path.to_string_lossy().to_string());
 
@@ -29,7 +41,7 @@ impl Volume {
                     let entry = entry.unwrap();
                     let path = entry.path();
 
-                    if path.file_name().unwrap().to_string_lossy().starts_with(".") {
+                    if Self::is_path_excluded(&path) {
                         continue;
                     }
 
@@ -67,7 +79,7 @@ impl Volume {
             entry: Result<walkdir::DirEntry, walkdir::Error>,
         ) -> Option<std::path::PathBuf> {
             let entry = entry.unwrap();
-            if entry.file_type().is_file() {
+            if entry.file_type().is_file() && !Volume::is_path_excluded(entry.path()) {
                 Some(entry.into_path())
             } else {
                 None
