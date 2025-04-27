@@ -43,6 +43,7 @@ impl ResourceCache {
 }
 
 
+#[derive(Debug)]
 pub struct ResourceCacheSnapshot {
     pub hashes: std::collections::HashMap<std::path::PathBuf, crate::util::hashing::Sha256>,
 }

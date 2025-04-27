@@ -241,10 +241,24 @@ impl Volumes {
             .next()
     }
 
+    fn take_and_save_snapshot(&self) {
+        use crate::util::snapshotting::Snapshottable;
+
+        let snapshot = self.take_snapshot();
+
+        let path = std::path::PathBuf::from("/tmp/snapshot.json");
+
+        snapshot.save_to_file(&path).unwrap_or_else(|_| {
+            eprintln!("Failed to save snapshot to {:?}", path);
+        });
+    }
+
     pub fn tick(&self) {
         for storage in &self.vols {
             storage.tick();
         }
+
+        self.take_and_save_snapshot();
     }
 }
 
