@@ -18,7 +18,16 @@ fn is_tag_char(c: char) -> bool {
 }
 
 fn is_url_char(c: char) -> bool {
-    c.is_alphanumeric() || c == '-' || c == '_' || c == '.' || c == '/' || c == ':' || c == '?' || c == '@' || c == '%' || c == '~'
+    c.is_alphanumeric()
+        || c == '-'
+        || c == '_'
+        || c == '.'
+        || c == '/'
+        || c == ':'
+        || c == '?'
+        || c == '@'
+        || c == '%'
+        || c == '~'
 }
 
 fn count_leading_chars(s: &str, c: char) -> usize {
@@ -433,11 +442,7 @@ impl ParagraphParser {
     }
 
     fn detect_url_start(&self, index: usize) -> bool {
-        let url_beginnings = [
-            "http://",
-            "https://",
-            "ftp://",
-        ];
+        let url_beginnings = ["http://", "https://", "ftp://"];
 
         for prefix in url_beginnings.iter() {
             if let (true, _) = self.check_at(index, prefix) {
@@ -452,18 +457,21 @@ impl ParagraphParser {
         if self.detect_url_start(index) {
             let mut i = index;
             let mut url = String::new();
+            let mut last_valid_url = None;
 
             while !self.at_end(i) && is_url_char(self.at(i).unwrap()) {
                 url.push(self.at(i).unwrap());
                 i += 1;
+
+                if let Ok(parsed_url) = url::Url::parse(&url) {
+                    last_valid_url = Some((i, parsed_url));
+                }
             }
 
-            if let Ok(url) = url::Url::parse(&url) {
-                return Some((i, url));
-            }
+            last_valid_url
+        } else {
+            None
         }
-
-        None
     }
 
     fn parse_recursively<F1, F2>(
