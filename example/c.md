@@ -12,6 +12,8 @@ Und das ist ***Salami***! Mit einem #tag und \
 etwas Code: `(cons 1 2)`. \
 Und eine neue Zeile, die eigentlich keine ist!
 
+Also, have a look at https://nijakow.de!
+
 > This is just a normal callout.
 
 > [!quote]

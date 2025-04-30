@@ -17,6 +17,10 @@ fn is_tag_char(c: char) -> bool {
     c.is_alphanumeric() || c == '-' || c == '_' || c == '/'
 }
 
+fn is_url_char(c: char) -> bool {
+    c.is_alphanumeric() || c == '-' || c == '_' || c == '.' || c == '/' || c == ':' || c == '?' || c == '@' || c == '%' || c == '~'
+}
+
 fn count_leading_chars(s: &str, c: char) -> usize {
     s.chars().take_while(|&x| x == c).count()
 }
@@ -159,11 +163,7 @@ impl ParagraphParser {
         (true, index + i)
     }
 
-    fn parse_bold_extra_wrap(
-        &self,
-        nodes: Nodes,
-        i: usize,
-    ) -> Option<ParseReturn> {
+    fn parse_bold_extra_wrap(&self, nodes: Nodes, i: usize) -> Option<ParseReturn> {
         Some(ParseReturn(Node::Bold(Box::new(Node::Nodes(nodes))), i))
     }
 
@@ -176,11 +176,7 @@ impl ParagraphParser {
         )
     }
 
-    fn parse_italic_extra_wrap(
-        &self,
-        nodes: Nodes,
-        i: usize,
-    ) -> Option<ParseReturn> {
+    fn parse_italic_extra_wrap(&self, nodes: Nodes, i: usize) -> Option<ParseReturn> {
         Some(ParseReturn(Node::Italic(Box::new(Node::Nodes(nodes))), i))
     }
 
@@ -193,11 +189,7 @@ impl ParagraphParser {
         )
     }
 
-    fn parse_tag(
-        &self,
-        index: usize,
-        flags: ParagraphFlags,
-    ) -> Option<ParseReturn> {
+    fn parse_tag(&self, index: usize, flags: ParagraphFlags) -> Option<ParseReturn> {
         let mut current = String::new();
         let mut i = index;
 
@@ -205,7 +197,6 @@ impl ParagraphParser {
 
         while !self.at_end(i) {
             if !is_tag_char(self.at(i).unwrap()) {
-                
                 return if current.is_empty() {
                     None
                 } else {
@@ -224,11 +215,7 @@ impl ParagraphParser {
         }
     }
 
-    fn parse_inline_code_block(
-        &self,
-        index: usize,
-        _flags: ParagraphFlags,
-    ) -> Option<ParseReturn> {
+    fn parse_inline_code_block(&self, index: usize, _flags: ParagraphFlags) -> Option<ParseReturn> {
         let mut current = String::new();
         let mut i = index;
 
@@ -263,7 +250,10 @@ impl ParagraphParser {
                 return Some(ParseReturn(
                     Node::Link {
                         embed,
-                        link: Link::with_target(markdown::LinkKind::Internal, markdown::LinkTarget::Zettel(target))
+                        link: Link::with_target(
+                            markdown::LinkKind::Internal,
+                            markdown::LinkTarget::Zettel(target),
+                        ),
                     },
                     new_i,
                 ));
@@ -278,7 +268,11 @@ impl ParagraphParser {
                         Some(ParseReturn(
                             Node::Link {
                                 embed,
-                                link: Link::with_title(markdown::LinkKind::Internal, markdown::LinkTarget::Zettel(target.clone()), nodes)
+                                link: Link::with_title(
+                                    markdown::LinkKind::Internal,
+                                    markdown::LinkTarget::Zettel(target.clone()),
+                                    nodes,
+                                ),
                             },
                             i,
                         ))
@@ -310,11 +304,7 @@ impl ParagraphParser {
         self.parse_internal_link(index, flags, false)
     }
 
-    fn parse_newline(
-        &self,
-        index: usize,
-        _flags: ParagraphFlags,
-    ) -> Option<ParseReturn> {
+    fn parse_newline(&self, index: usize, _flags: ParagraphFlags) -> Option<ParseReturn> {
         Some(ParseReturn(Node::Newline, index))
     }
 
@@ -330,7 +320,7 @@ impl ParagraphParser {
                 None
             }
         }
-        
+
         fn find_bold(
             parser: &ParagraphParser,
             index: usize,
@@ -442,6 +432,40 @@ impl ParagraphParser {
         None
     }
 
+    fn detect_url_start(&self, index: usize) -> bool {
+        let url_beginnings = [
+            "http://",
+            "https://",
+            "ftp://",
+        ];
+
+        for prefix in url_beginnings.iter() {
+            if let (true, _) = self.check_at(index, prefix) {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    fn try_parse_url(&self, _parser: &ParagraphParser, index: usize) -> Option<(usize, url::Url)> {
+        if self.detect_url_start(index) {
+            let mut i = index;
+            let mut url = String::new();
+
+            while !self.at_end(i) && is_url_char(self.at(i).unwrap()) {
+                url.push(self.at(i).unwrap());
+                i += 1;
+            }
+
+            if let Ok(url) = url::Url::parse(&url) {
+                return Some((i, url));
+            }
+        }
+
+        None
+    }
+
     fn parse_recursively<F1, F2>(
         &self,
         mut i: usize,
@@ -460,6 +484,22 @@ impl ParagraphParser {
             if let (true, new_i) = extra_end_condition(self, i) {
                 i = new_i;
                 break;
+            }
+
+            if let Some((new_i, url)) = self.try_parse_url(self, i) {
+                i = new_i;
+                if !current_string.is_empty() {
+                    nodes.push(Node::Text(current_string));
+                    current_string = String::new();
+                }
+                nodes.push(Node::Link {
+                    embed: false,
+                    link: Link::with_target(
+                        markdown::LinkKind::External,
+                        markdown::LinkTarget::Url(url),
+                    ),
+                });
+                continue;
             }
 
             if let Some(ParseReturn(new_node, new_i)) = self.try_run_parsers(i, flags) {
@@ -486,11 +526,7 @@ impl ParagraphParser {
         (false, i)
     }
 
-    fn no_extra_wrap(
-        _parser: &ParagraphParser,
-        nodes: Nodes,
-        i: usize,
-    ) -> Option<ParseReturn> {
+    fn no_extra_wrap(_parser: &ParagraphParser, nodes: Nodes, i: usize) -> Option<ParseReturn> {
         Some(ParseReturn(Node::Nodes(nodes), i))
     }
 
@@ -692,7 +728,6 @@ impl MarkdownParser {
                 } else if let Some(block) = self.try_parse_line(line) {
                     pre_parsed.push(PreParsed::Parsed(Box::new(block)));
                 }
-
             } else if let Some(block) = self.try_parse_line(line) {
                 if !current_block.is_empty() {
                     pre_parsed.push(PreParsed::Unparsed(Box::new(current_block)));
