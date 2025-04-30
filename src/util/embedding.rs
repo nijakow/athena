@@ -2,7 +2,6 @@ use crate::core::entity::{self, zettel::document::conversions::html::HtmlConvers
 
 use crate::volt::resource;
 
-
 fn content_not_displayed() -> maud::Markup {
     maud::html! {
         p { "Content not displayed" }
@@ -25,7 +24,25 @@ fn decorate_with_link_button<S: ToString>(
     }
 }
 
+fn get_youtube_embed_url(url: &url::Url) -> Option<String> {
+    if url.domain()? == "www.youtube.com" && url.path() == "/watch" {
+        if let Some(video_id) = url.query_pairs().find(|(key, _)| key == "v").map(|(_, value)| value) {
+            return Some(format!("https://www.youtube.com/embed/{}", video_id));
+        }
+    } else if url.domain()? == "youtu.be" {
+        return Some(format!("https://www.youtube.com/embed{}", url.path()));
+    }
+    None
+}
+
 pub fn generate_embed_for_url(url: &url::Url) -> Option<maud::PreEscaped<String>> {
+    // Check if the URL is a YouTube video
+    if let Some(embed_url) = get_youtube_embed_url(url) {
+        return Some(maud::html! {
+            iframe src=(embed_url) width="100%" height="315" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen {}
+        });
+    }
+
     let guessed_type = resource::Type::from_url(url)?;
     let mime = guessed_type.mime_type().to_string();
     let uri = url;
