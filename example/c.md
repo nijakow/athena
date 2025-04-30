@@ -8,7 +8,8 @@ This is just *another* document.
 
 Das ist *Burgunder* und das ist **Bordeaux**!
 
-Und das ist ***Salami***! Mit einem #tag und etwas Code: `(cons 1 2)`
+Und das ist ***Salami***! Mit einem #tag und etwas Code: `(cons 1 2)`.
+Und eine neue Zeile, die eigentlich keine ist!
 
 > This is just a normal callout.
 
@@ -63,3 +64,7 @@ int main(int argc, char* argv[])
  - Baz
 
 Aaaaaand a [[c|**funny *little*** Self #tag reference!]].
+
+![[nijakow.png]]
+
+![[hi.txt]]

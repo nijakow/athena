@@ -310,7 +310,27 @@ impl ParagraphParser {
         self.parse_internal_link(index, flags, false)
     }
 
+    fn parse_newline(
+        &self,
+        index: usize,
+        _flags: ParagraphFlags,
+    ) -> Option<ParseReturn> {
+        Some(ParseReturn(Node::Newline, index))
+    }
+
     fn try_find_parsers(&self, index: usize, flags: ParagraphFlags) -> Vec<LittleParser> {
+        fn find_newline(
+            parser: &ParagraphParser,
+            index: usize,
+            _flags: ParagraphFlags,
+        ) -> Option<LittleParser> {
+            if let (true, new_i) = parser.check_at(index, "\n\n") {
+                Some(LittleParser::new(ParagraphParser::parse_newline, new_i))
+            } else {
+                None
+            }
+        }
+        
         fn find_bold(
             parser: &ParagraphParser,
             index: usize,
@@ -399,6 +419,7 @@ impl ParagraphParser {
         }
 
         let finders = [
+            find_newline,
             find_bold,
             find_italic,
             find_tag,
