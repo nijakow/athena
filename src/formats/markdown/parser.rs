@@ -269,21 +269,16 @@ impl ParagraphParser {
             }
         }
 
-        let mut parsers = Vec::new();
+        let finders = [
+            find_bold,
+            find_italic,
+            find_tag,
+        ];
 
-        if let Some(parser) = find_bold(self, index, flags) {
-            parsers.push(parser);
-        }
-
-        if let Some(parser) = find_italic(self, index, flags) {
-            parsers.push(parser);
-        }
-
-        if let Some(parser) = find_tag(self, index, flags) {
-            parsers.push(parser);
-        }
-
-        parsers
+        finders
+            .iter()
+            .filter_map(|finder| finder(self, index, flags))
+            .collect()
     }
 
     fn try_run_parsers(&self, i: usize, flags: ParagraphFlags) -> Option<ParseReturn> {
