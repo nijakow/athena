@@ -1,6 +1,6 @@
 use crate::formats::markdown;
 
-use super::Node;
+use super::{Node, Nodes};
 
 #[derive(Debug)]
 pub enum ParseError {}
@@ -109,6 +109,26 @@ impl ParagraphFlags {
     }
 }
 
+struct ParseReturn(Node, usize);
+
+struct LittleParser {
+    parser: fn(&ParagraphParser, usize, ParagraphFlags) -> Option<ParseReturn>,
+    index: usize,
+}
+
+impl LittleParser {
+    fn new(
+        parser: fn(&ParagraphParser, usize, ParagraphFlags) -> Option<ParseReturn>,
+        index: usize,
+    ) -> LittleParser {
+        LittleParser { parser, index }
+    }
+
+    fn parse(&self, parser: &ParagraphParser, flags: ParagraphFlags) -> Option<ParseReturn> {
+        (self.parser)(parser, self.index, flags)
+    }
+}
+
 struct ParagraphParser {
     chars: Vec<char>,
 }
@@ -139,275 +159,154 @@ impl ParagraphParser {
         (true, index + i)
     }
 
-    fn parse_bold_from(&self, index: usize, flags: ParagraphFlags) -> Option<ParseLink> {
-        let mut current = String::new();
-        let mut i = index;
-
-        while !self.at_end(i) {
-            if let (true, new_i) = self.check_at(i, "**") {
-                return Some(ParseLink::adjoin(
-                    Node::Bold(Box::new(Node::Nodes(Self::for_string(current).parse_with_flags(flags.with_bold())))),
-                    self.parse_from(new_i, flags),
-                ));
-            }
-
-            current.push(self.at(i).unwrap());
-            i += 1;
-        }
-
-        None
-    }
-
-    fn parse_italic_from(&self, index: usize, flags: ParagraphFlags) -> Option<ParseLink> {
-        let mut current = String::new();
-        let mut i = index;
-
-        while !self.at_end(i) {
-            if let (true, new_i) = self.check_at(i, "*") {
-                return Some(ParseLink::adjoin(
-                    Node::Italic(Box::new(Node::Nodes(Self::for_string(current).parse_with_flags(flags.with_italic())))),
-                    self.parse_from(new_i, flags),
-                ));
-            }
-
-            current.push(self.at(i).unwrap());
-            i += 1;
-        }
-
-        None
-    }
-
-    fn parse_internal_link(
+    fn parse_bold_extra_wrap(
         &self,
-        index: usize,
-        flags: ParagraphFlags,
-        embed: bool,
-    ) -> Option<ParseLink> {
-        let mut current = String::new();
-        let mut i = index;
-
-        while !self.at_end(i) {
-            if let (true, new_i) = self.check_at(i, "]]") {
-                let (target, title) = split_string_at_optional_pipe(&current);
-
-                let title =
-                    title.map(|title| Self::for_string(title).parse_with_flags(flags.with_link()));
-
-                let link = markdown::Link {
-                    kind: markdown::LinkKind::Internal,
-                    target: markdown::LinkTarget::Zettel(target.to_string()),
-                    title,
-                };
-
-                return Some(ParseLink::adjoin(
-                    Node::Link { link, embed },
-                    self.parse_from(new_i, flags),
-                ));
-            }
-
-            current.push(self.at(i).unwrap());
-            i += 1;
-        }
-
-        None
+        nodes: Nodes,
+        i: usize,
+    ) -> Option<ParseReturn> {
+        Some(ParseReturn(Node::Bold(Box::new(Node::Nodes(nodes))), i))
     }
 
-    fn parse_external_link_part2(
+    fn parse_bold(&self, index: usize, flags: ParagraphFlags) -> Option<ParseReturn> {
+        self.parse_recursively(
+            index,
+            |parser, i| parser.check_at(i, "**"),
+            ParagraphParser::parse_bold_extra_wrap,
+            flags.with_bold(),
+        )
+    }
+
+    fn parse_italic_extra_wrap(
         &self,
-        index: usize,
-        flags: ParagraphFlags,
-        part1: String,
-        embed: bool,
-    ) -> Option<ParseLink> {
-        let mut current = String::new();
-        let mut i = index;
+        nodes: Nodes,
+        i: usize,
+    ) -> Option<ParseReturn> {
+        Some(ParseReturn(Node::Italic(Box::new(Node::Nodes(nodes))), i))
+    }
 
-        while !self.at_end(i) {
-            if let (true, new_i) = self.check_at(i, ")") {
-                let link = markdown::Link {
-                    kind: markdown::LinkKind::External,
-                    target: markdown::LinkTarget::guess(current),
-                    title: Some(Self::for_string(part1).parse_with_flags(flags.with_link())),
-                };
+    fn parse_italic(&self, index: usize, flags: ParagraphFlags) -> Option<ParseReturn> {
+        self.parse_recursively(
+            index,
+            |parser, i| parser.check_at(i, "*"),
+            ParagraphParser::parse_italic_extra_wrap,
+            flags.with_italic(),
+        )
+    }
 
-                return Some(ParseLink::adjoin(
-                    Node::Link { link, embed },
-                    self.parse_from(new_i, flags),
-                ));
+    fn try_find_parsers(&self, index: usize, flags: ParagraphFlags) -> Vec<LittleParser> {
+        fn find_bold(
+            parser: &ParagraphParser,
+            index: usize,
+            flags: ParagraphFlags,
+        ) -> Option<LittleParser> {
+            if flags.bold {
+                return None;
             }
 
-            current.push(self.at(i).unwrap());
-            i += 1;
+            if let (true, new_i) = parser.check_at(index, "**") {
+                Some(LittleParser::new(ParagraphParser::parse_bold, new_i))
+            } else {
+                None
+            }
         }
 
+        fn find_italic(
+            parser: &ParagraphParser,
+            index: usize,
+            flags: ParagraphFlags,
+        ) -> Option<LittleParser> {
+            if flags.italic {
+                return None;
+            }
+
+            if let (true, new_i) = parser.check_at(index, "*") {
+                Some(LittleParser::new(ParagraphParser::parse_italic, new_i))
+            } else {
+                None
+            }
+        }
+
+        let mut parsers = Vec::new();
+
+        if let Some(parser) = find_bold(self, index, flags) {
+            parsers.push(parser);
+        }
+
+        if let Some(parser) = find_italic(self, index, flags) {
+            parsers.push(parser);
+        }
+
+        parsers
+    }
+
+    fn try_run_parsers(&self, i: usize, flags: ParagraphFlags) -> Option<ParseReturn> {
+        for parser in self.try_find_parsers(i, flags) {
+            if let Some(parse_return) = parser.parse(self, flags) {
+                return Some(parse_return);
+            }
+        }
         None
     }
 
-    fn parse_external_link(
+    fn parse_recursively(
         &self,
-        index: usize,
+        mut i: usize,
+        extra_end_condition: fn(&ParagraphParser, usize) -> (bool, usize),
+        extra_wrap: fn(&ParagraphParser, Nodes, usize) -> Option<ParseReturn>,
         flags: ParagraphFlags,
-        embed: bool,
-    ) -> Option<ParseLink> {
-        let mut current = String::new();
-        let mut i = index;
-
-        // Parse until we reach a `](` combination - fail if we reach the end of the string
-
-        while !self.at_end(i) {
-            if let (true, new_i) = self.check_at(i, "](") {
-                return self.parse_external_link_part2(new_i, flags, current, embed);
-            }
-
-            current.push(self.at(i).unwrap());
-            i += 1;
-        }
-
-        None
-    }
-
-    fn parse_code(&self, index: usize, flags: ParagraphFlags) -> Option<ParseLink> {
-        let mut current = String::new();
-        let mut i = index;
-
-        while !self.at_end(i) {
-            if let (true, new_i) = self.check_at(i, "`") {
-                return Some(ParseLink::adjoin(
-                    Node::Code(current),
-                    self.parse_from(new_i, flags),
-                ));
-            }
-
-            current.push(self.at(i).unwrap());
-            i += 1;
-        }
-
-        None
-    }
-
-    fn parse_tag(&self, index: usize, flags: ParagraphFlags) -> Option<ParseLink> {
-        let mut current = String::new();
-        let mut i = index;
-
-        // Parse while we have a tag character (`is_tag_char`)
-
-        while !self.at_end(i) {
-            if !is_tag_char(self.at(i).unwrap()) {
-                return Some(ParseLink::adjoin(
-                    Node::Tag(current),
-                    self.parse_from(i, flags),
-                ));
-            }
-
-            current.push(self.at(i).unwrap());
-            i += 1;
-        }
-
-        if current.is_empty() {
-            None
-        } else {
-            Some(ParseLink::first(Node::Tag(current)))
-        }
-    }
-
-    fn parse_from(&self, index: usize, flags: ParagraphFlags) -> ParseLink {
-        let mut current = String::new();
-        let mut i = index;
-
-        while !self.at_end(i) {
-            if !flags.bold {
-                if let (true, new_i) = self.check_at(i, "**") {
-                    if let Some(link) = self.parse_bold_from(new_i, flags) {
-                        return ParseLink::adjoin(Node::Text(current), link);
-                    }
-                }
-            }
-
-            if !flags.italic {
-                if let (true, new_i) = self.check_at(i, "*") {
-                    if let Some(link) = self.parse_italic_from(new_i, flags) {
-                        return ParseLink::adjoin(Node::Text(current), link);
-                    }
-                }
-            }
-
-            if !flags.link {
-                if let (true, new_i) = self.check_at(i, "![[") {
-                    if let Some(link) = self.parse_internal_link(new_i, flags, true) {
-                        return ParseLink::adjoin(Node::Text(current), link);
-                    }
-                }
-
-                if let (true, new_i) = self.check_at(i, "![") {
-                    if let Some(link) = self.parse_external_link(new_i, flags, true) {
-                        return ParseLink::adjoin(Node::Text(current), link);
-                    }
-                }
-
-                if let (true, new_i) = self.check_at(i, "[[") {
-                    if let Some(link) = self.parse_internal_link(new_i, flags, false) {
-                        return ParseLink::adjoin(Node::Text(current), link);
-                    }
-                }
-
-                if let (true, new_i) = self.check_at(i, "[") {
-                    if let Some(link) = self.parse_external_link(new_i, flags, false) {
-                        return ParseLink::adjoin(Node::Text(current), link);
-                    }
-                }
-
-                if let (true, new_i) = self.check_at(i, "`") {
-                    if let Some(link) = self.parse_code(new_i, flags) {
-                        return ParseLink::adjoin(Node::Text(current), link);
-                    }
-                }
-
-                if let (true, new_i) = self.check_at(i, "#") {
-                    if let Some(link) = self.parse_tag(new_i, flags) {
-                        return ParseLink::adjoin(Node::Text(current), link);
-                    }
-                }
-
-                if let (true, new_i) = self.check_at(i, "\n") {
-                    return ParseLink::adjoin(
-                        Node::Text(current),
-                        ParseLink::adjoin(Node::Newline, self.parse_from(new_i, flags)),
-                    );
-                }
-            }
-
-            current.push(self.at(i).unwrap());
-            i += 1;
-        }
-
-        ParseLink::first(Node::Text(current))
-    }
-
-    pub fn parse_with_flags(&self, flags: ParagraphFlags) -> markdown::Nodes {
+    ) -> Option<ParseReturn> {
         let mut nodes = Vec::new();
-        let mut link = self.parse_from(0, flags);
+        let mut current_string = String::new();
 
-        loop {
-            if let Node::Text(text) = *link.current {
-                if !text.is_empty() {
-                    nodes.push(Node::Text(text));
-                }
-            } else {
-                nodes.push(*link.current);
-            }
-
-            if let Some(next) = link.next {
-                link = *next;
-            } else {
+        while !self.at_end(i) {
+            if let (true, new_i) = extra_end_condition(self, i) {
+                i = new_i;
                 break;
             }
+
+            if let Some(ParseReturn(new_node, new_i)) = self.try_run_parsers(i, flags) {
+                if !current_string.is_empty() {
+                    nodes.push(Node::Text(current_string));
+                    current_string = String::new();
+                }
+                nodes.push(new_node);
+                i = new_i;
+            } else {
+                current_string.push(self.at(i).unwrap());
+                i += 1;
+            }
         }
 
-        nodes
+        if !current_string.is_empty() {
+            nodes.push(Node::Text(current_string));
+        }
+
+        extra_wrap(self, nodes, i)
+    }
+
+    fn no_extra_end_condition(_parser: &ParagraphParser, i: usize) -> (bool, usize) {
+        (false, i)
+    }
+
+    fn no_extra_wrap(
+        _parser: &ParagraphParser,
+        nodes: Nodes,
+        i: usize,
+    ) -> Option<ParseReturn> {
+        Some(ParseReturn(Node::Nodes(nodes), i))
     }
 
     pub fn parse(&self) -> markdown::Nodes {
-        self.parse_with_flags(ParagraphFlags::new())
+        if let Some(ParseReturn(Node::Nodes(nodes), _)) = self.parse_recursively(
+            0,
+            ParagraphParser::no_extra_end_condition,
+            ParagraphParser::no_extra_wrap,
+            ParagraphFlags::new(),
+        ) {
+            nodes
+        } else {
+            Vec::new()
+        }
     }
 }
 
@@ -563,10 +462,7 @@ impl MarkdownParser {
                     (vec![line], None)
                 };
 
-                current_item = Some(CurrentItem::Callout(Callout {
-                    kind,
-                    lines,
-                }));
+                current_item = Some(CurrentItem::Callout(Callout { kind, lines }));
             } else if line.starts_with(" - ") || line.starts_with(" * ") {
                 if !current_block.is_empty() {
                     pre_parsed.push(PreParsed::Unparsed(Box::new(current_block)));
@@ -604,12 +500,15 @@ impl MarkdownParser {
     }
 
     fn parse_lines(&self, lines: &Vec<String>) -> markdown::Blocks {
-        self.pre_parse_lines(lines).into_iter().map(|pre_parsed| match pre_parsed {
-            PreParsed::Parsed(block) => *block,
-            PreParsed::Unparsed(lines) => {
-                markdown::Block::Nodes(self.parse_paragraph(&lines.join("\n")))
-            }
-        }).collect()
+        self.pre_parse_lines(lines)
+            .into_iter()
+            .map(|pre_parsed| match pre_parsed {
+                PreParsed::Parsed(block) => *block,
+                PreParsed::Unparsed(lines) => {
+                    markdown::Block::Nodes(self.parse_paragraph(&lines.join("\n")))
+                }
+            })
+            .collect()
     }
 
     pub fn parse(&self) -> Result<markdown::Document, ParseError> {
@@ -625,7 +524,7 @@ pub fn parse_document(text: String) -> Result<markdown::Document, ParseError> {
 
 ///
 /// Parse a text snippet into a list of nodes.
-/// 
+///
 pub fn parse_text_snippet<S: ToString>(content: S) -> Result<super::Nodes, ()> {
     let parser = ParagraphParser::for_string(content);
     Ok(parser.parse())
