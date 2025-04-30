@@ -254,18 +254,16 @@ impl ParagraphParser {
         // end of the string or ']]' or '|' (if we reach a '|', we need to recursively parse
         // the text after it).
 
-        let mut current = String::new();
+        let mut target = String::new();
 
         let mut i = index;
-
-        let mut link = String::new();
 
         while !self.at_end(i) {
             if let (true, new_i) = self.check_at(i, "]]") {
                 return Some(ParseReturn(
                     Node::Link {
                         embed,
-                        link: Link::with_target(markdown::LinkKind::Internal, markdown::LinkTarget::Zettel(link))
+                        link: Link::with_target(markdown::LinkKind::Internal, markdown::LinkTarget::Zettel(target))
                     },
                     new_i,
                 ));
@@ -276,11 +274,11 @@ impl ParagraphParser {
                 return self.parse_recursively(
                     new_i,
                     |parser, i| parser.check_at(i, "]]"),
-                    |parser, nodes, i| {
+                    |_parser, nodes, i| {
                         Some(ParseReturn(
                             Node::Link {
                                 embed,
-                                link: Link::with_target(markdown::LinkKind::Internal, markdown::LinkTarget::Zettel(link))
+                                link: Link::with_title(markdown::LinkKind::Internal, markdown::LinkTarget::Zettel(target.clone()), nodes)
                             },
                             i,
                         ))
@@ -288,6 +286,9 @@ impl ParagraphParser {
                     flags.with_link(),
                 );
             }
+
+            target.push(self.at(i).unwrap());
+            i += 1;
         }
 
         None
@@ -345,8 +346,12 @@ impl ParagraphParser {
         fn find_tag(
             parser: &ParagraphParser,
             index: usize,
-            _flags: ParagraphFlags,
+            flags: ParagraphFlags,
         ) -> Option<LittleParser> {
+            if flags.link {
+                return None;
+            }
+
             if let (true, new_i) = parser.check_at(index, "#") {
                 Some(LittleParser::new(ParagraphParser::parse_tag, new_i))
             } else {
@@ -369,11 +374,36 @@ impl ParagraphParser {
             }
         }
 
+        fn find_internal_link(
+            parser: &ParagraphParser,
+            index: usize,
+            flags: ParagraphFlags,
+        ) -> Option<LittleParser> {
+            if flags.link {
+                return None;
+            }
+
+            if let (true, new_i) = parser.check_at(index, "![[") {
+                Some(LittleParser::new(
+                    ParagraphParser::parse_embedded_internal_link,
+                    new_i,
+                ))
+            } else if let (true, new_i) = parser.check_at(index, "[[") {
+                Some(LittleParser::new(
+                    ParagraphParser::parse_unembedded_internal_link,
+                    new_i,
+                ))
+            } else {
+                None
+            }
+        }
+
         let finders = [
             find_bold,
             find_italic,
             find_tag,
             find_inline_code_block,
+            find_internal_link,
         ];
 
         finders
@@ -391,13 +421,17 @@ impl ParagraphParser {
         None
     }
 
-    fn parse_recursively(
+    fn parse_recursively<F1, F2>(
         &self,
         mut i: usize,
-        extra_end_condition: fn(&ParagraphParser, usize) -> (bool, usize),
-        extra_wrap: fn(&ParagraphParser, Nodes, usize) -> Option<ParseReturn>,
+        extra_end_condition: F1,
+        extra_wrap: F2,
         flags: ParagraphFlags,
-    ) -> Option<ParseReturn> {
+    ) -> Option<ParseReturn>
+    where
+        F1: Fn(&ParagraphParser, usize) -> (bool, usize),
+        F2: Fn(&ParagraphParser, Nodes, usize) -> Option<ParseReturn>,
+    {
         let mut nodes = Vec::new();
         let mut current_string = String::new();
 

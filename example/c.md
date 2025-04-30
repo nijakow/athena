@@ -61,3 +61,5 @@ int main(int argc, char* argv[])
  - Foo
  - Bar
  - Baz
+
+Aaaaaand a [[c|**funny *little*** Self #tag reference!]].
