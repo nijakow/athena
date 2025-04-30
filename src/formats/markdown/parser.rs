@@ -193,6 +193,37 @@ impl ParagraphParser {
         )
     }
 
+    fn parse_tag(
+        &self,
+        index: usize,
+        flags: ParagraphFlags,
+    ) -> Option<ParseReturn> {
+        let mut current = String::new();
+        let mut i = index;
+
+        // Parse while we have a tag character (`is_tag_char`)
+
+        while !self.at_end(i) {
+            if !is_tag_char(self.at(i).unwrap()) {
+                
+                return if current.is_empty() {
+                    None
+                } else {
+                    Some(ParseReturn(Node::Tag(current), i))
+                };
+            }
+
+            current.push(self.at(i).unwrap());
+            i += 1;
+        }
+
+        if current.is_empty() {
+            None
+        } else {
+            Some(ParseReturn(Node::Tag(current), i))
+        }
+    }
+
     fn try_find_parsers(&self, index: usize, flags: ParagraphFlags) -> Vec<LittleParser> {
         fn find_bold(
             parser: &ParagraphParser,
@@ -226,6 +257,18 @@ impl ParagraphParser {
             }
         }
 
+        fn find_tag(
+            parser: &ParagraphParser,
+            index: usize,
+            flags: ParagraphFlags,
+        ) -> Option<LittleParser> {
+            if let (true, new_i) = parser.check_at(index, "#") {
+                Some(LittleParser::new(ParagraphParser::parse_tag, new_i))
+            } else {
+                None
+            }
+        }
+
         let mut parsers = Vec::new();
 
         if let Some(parser) = find_bold(self, index, flags) {
@@ -233,6 +276,10 @@ impl ParagraphParser {
         }
 
         if let Some(parser) = find_italic(self, index, flags) {
+            parsers.push(parser);
+        }
+
+        if let Some(parser) = find_tag(self, index, flags) {
             parsers.push(parser);
         }
 
