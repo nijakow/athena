@@ -146,7 +146,7 @@ impl ParagraphParser {
         while !self.at_end(i) {
             if let (true, new_i) = self.check_at(i, "**") {
                 return Some(ParseLink::adjoin(
-                    Node::Bold(Self::for_string(current).parse_with_flags(flags.with_bold())),
+                    Node::Bold(Box::new(Node::Nodes(Self::for_string(current).parse_with_flags(flags.with_bold())))),
                     self.parse_from(new_i, flags),
                 ));
             }
@@ -165,7 +165,7 @@ impl ParagraphParser {
         while !self.at_end(i) {
             if let (true, new_i) = self.check_at(i, "*") {
                 return Some(ParseLink::adjoin(
-                    Node::Italic(Self::for_string(current).parse_with_flags(flags.with_italic())),
+                    Node::Italic(Box::new(Node::Nodes(Self::for_string(current).parse_with_flags(flags.with_italic())))),
                     self.parse_from(new_i, flags),
                 ));
             }

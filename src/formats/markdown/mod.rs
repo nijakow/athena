@@ -59,14 +59,15 @@ impl Link {
 pub enum Node {
     Newline,
     Text(String),
-    Bold(Nodes),
-    Italic(Nodes),
+    Bold(Box<Node>),
+    Italic(Box<Node>),
     Link {
         embed: bool,
         link: Link,
     },
     Code(String),
     Tag(String),
+    Nodes(Nodes),
 }
 
 pub type Nodes = Vec<Node>;

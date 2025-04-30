@@ -5,13 +5,13 @@ use crate::formats::markdown;
 pub type ConversionError = ();
 
 fn convert_node(node: &markdown::Node) -> Result<document::node::Node, ConversionError> {
-    fn styled(
-        nodes: &markdown::Nodes,
+    fn styled1(
+        node: &markdown::Node,
         style: document::node::Style,
     ) -> Result<document::node::Node, ConversionError> {
         Ok(document::node::Node::Styled(
             style,
-            Box::new(document::node::Node::Grouped(convert_nodes(nodes)?)),
+            Box::new(convert_node(node)?),
         ))
     }
 
@@ -19,8 +19,8 @@ fn convert_node(node: &markdown::Node) -> Result<document::node::Node, Conversio
         markdown::Node::Newline => Ok(document::node::Node::Newline),
         markdown::Node::Text(text) => Ok(document::node::Node::Text(text.clone())),
         markdown::Node::Code(code) => Ok(document::node::Node::Code(code.clone())),
-        markdown::Node::Bold(nodes) => styled(nodes, document::node::Style::Bold),
-        markdown::Node::Italic(nodes) => styled(nodes, document::node::Style::Italic),
+        markdown::Node::Bold(node) => styled1(node, document::node::Style::Bold),
+        markdown::Node::Italic(node) => styled1(node, document::node::Style::Italic),
         markdown::Node::Tag(tag) => Ok(document::node::Node::Tag(tag.clone())),
         markdown::Node::Link { embed, link } => {
             let target = &link.target;
@@ -49,6 +49,9 @@ fn convert_node(node: &markdown::Node) -> Result<document::node::Node, Conversio
                 Some(node) => Ok(node),
                 None => Ok(document::node::Node::Text("TODO".to_string())),
             }
+        }
+        markdown::Node::Nodes(nodes) => {
+            Ok(document::node::Node::Grouped(convert_nodes(nodes)?))
         }
     }
 }
