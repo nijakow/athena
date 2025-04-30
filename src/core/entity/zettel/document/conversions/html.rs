@@ -143,22 +143,13 @@ impl AsHtml for document::block::callout::Callout {
     fn as_html(&self, context: &HtmlConversionContext) -> String {
         use maud::html;
 
-        // Use a different background color hue for each kind of callout (use pastel colors, hardcoded as hex codes)
-        let (background, border) = match self.kind {
-            /*
-             * Basic:   Grey-ish
-             * Quote:   Grey-ish
-             * Note:    Blue-ish
-             * Info:    Green-ish
-             * Warning: Yellow-ish
-             * Error:   Red-ish
-             */
-            document::block::callout::Kind::Basic => ("#f0f0f0", "#000000"),
-            document::block::callout::Kind::Quote => ("#f0f0f0", "#d0d0d0"),
-            document::block::callout::Kind::Note => ("#f0f8ff", "#add8e6"),
-            document::block::callout::Kind::Info => ("#f0fff0", "#90ee90"),
-            document::block::callout::Kind::Warning => ("#ffffe0", "#ffd700"),
-            document::block::callout::Kind::Error => ("#ffe0e0", "#ff6961"),
+        let class_name = match self.kind {
+            document::block::callout::Kind::Basic => "callout callout-bordered-left callout-basic",
+            document::block::callout::Kind::Quote => "callout callout-bordered callout-quote",
+            document::block::callout::Kind::Note => "callout callout-bordered callout-note",
+            document::block::callout::Kind::Info => "callout callout-bordered callout-info",
+            document::block::callout::Kind::Warning => "callout callout-bordered callout-warning",
+            document::block::callout::Kind::Error => "callout callout-bordered callout-error",
         };
 
         let blocks = self
@@ -167,20 +158,12 @@ impl AsHtml for document::block::callout::Callout {
             .map(|block| block.as_html(context))
             .collect::<String>();
 
-        // The way we turn this into HTML is by using a <div> element, setting the background color
-        // explicitly, adding a border and a margin, and then rendering the blocks inside
-
-        let border_type = if let document::block::callout::Kind::Basic = self.kind {
-            "border-left"
-        } else {
-            "border"
-        };
-
         html! {
-            div style=(format!("{}: 4px solid; margin: 1em 0; padding: 1em; background-color: {}; border-color: {}; border-radius: 0.5em;", border_type, background, border)) {
+            div class=(class_name) {
                 (maud::PreEscaped(blocks))
             }
-        }.into_string()
+        }
+        .into_string()
     }
 }
 

@@ -6,3 +6,47 @@ a.external {
     background-size: 0.857em;
     padding-right: 1em
 }
+
+.callout {
+    margin: 1em 0;
+    padding: 1em;
+    border-radius: 0.5em;
+}
+
+.callout-bordered {
+    border: 4px solid;
+}
+
+.callout-bordered-left {
+    border-left: 4px solid;
+}
+
+.callout-basic {
+    background-color: #f0f0f0;
+    border-color: #000000;
+}
+
+.callout-quote {
+    background-color: #f0f0f0;
+    border-color: #d0d0d0;
+}
+
+.callout-note {
+    background-color: #f0f8ff;
+    border-color: #add8e6;
+}
+
+.callout-info {
+    background-color: #f0fff0;
+    border-color: #90ee90;
+}
+
+.callout-warning {
+    background-color: #ffffe0;
+    border-color: #ffd700;
+}
+
+.callout-error {
+    background-color: #ffe0e0;
+    border-color: #ff6961;
+}
