@@ -324,7 +324,7 @@ impl ParagraphParser {
             index: usize,
             _flags: ParagraphFlags,
         ) -> Option<LittleParser> {
-            if let (true, new_i) = parser.check_at(index, "\n\n") {
+            if let (true, new_i) = parser.check_at(index, "\\\n") {
                 Some(LittleParser::new(ParagraphParser::parse_newline, new_i))
             } else {
                 None
@@ -669,6 +669,30 @@ impl MarkdownParser {
                 pre_parsed.push(PreParsed::Parsed(Box::new(markdown::Block::BulletPoint(
                     self.parse_bullet_point(line).unwrap(),
                 ))));
+            } else if line.is_empty() {
+                if !current_block.is_empty() {
+                    pre_parsed.push(PreParsed::Unparsed(Box::new(current_block)));
+                    current_block = Vec::new();
+                }
+                // Technically, we have a new paragraph here. So we should push the current block
+                // and start a new one.
+
+                if let Some(CurrentItem::CodeBlock(cb)) = current_item {
+                    pre_parsed.push(PreParsed::Parsed(Box::new(markdown::Block::Code(
+                        cb.lang,
+                        cb.lines.join("\n"),
+                    ))));
+                    current_item = None;
+                } else if let Some(CurrentItem::Callout(callout)) = current_item {
+                    pre_parsed.push(PreParsed::Parsed(Box::new(markdown::Block::Callout(
+                        callout.kind,
+                        self.parse_lines(&callout.lines),
+                    ))));
+                    current_item = None;
+                } else if let Some(block) = self.try_parse_line(line) {
+                    pre_parsed.push(PreParsed::Parsed(Box::new(block)));
+                }
+
             } else if let Some(block) = self.try_parse_line(line) {
                 if !current_block.is_empty() {
                     pre_parsed.push(PreParsed::Unparsed(Box::new(current_block)));
