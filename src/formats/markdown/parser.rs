@@ -224,6 +224,26 @@ impl ParagraphParser {
         }
     }
 
+    fn parse_inline_code_block(
+        &self,
+        index: usize,
+        _flags: ParagraphFlags,
+    ) -> Option<ParseReturn> {
+        let mut current = String::new();
+        let mut i = index;
+
+        while !self.at_end(i) {
+            if self.at(i).unwrap() == '`' {
+                return Some(ParseReturn(Node::Code(current), i + 1));
+            }
+
+            current.push(self.at(i).unwrap());
+            i += 1;
+        }
+
+        None
+    }
+
     fn try_find_parsers(&self, index: usize, flags: ParagraphFlags) -> Vec<LittleParser> {
         fn find_bold(
             parser: &ParagraphParser,
@@ -260,10 +280,25 @@ impl ParagraphParser {
         fn find_tag(
             parser: &ParagraphParser,
             index: usize,
-            flags: ParagraphFlags,
+            _flags: ParagraphFlags,
         ) -> Option<LittleParser> {
             if let (true, new_i) = parser.check_at(index, "#") {
                 Some(LittleParser::new(ParagraphParser::parse_tag, new_i))
+            } else {
+                None
+            }
+        }
+
+        fn find_inline_code_block(
+            parser: &ParagraphParser,
+            index: usize,
+            _flags: ParagraphFlags,
+        ) -> Option<LittleParser> {
+            if let (true, new_i) = parser.check_at(index, "`") {
+                Some(LittleParser::new(
+                    ParagraphParser::parse_inline_code_block,
+                    new_i,
+                ))
             } else {
                 None
             }
@@ -273,6 +308,7 @@ impl ParagraphParser {
             find_bold,
             find_italic,
             find_tag,
+            find_inline_code_block,
         ];
 
         finders
