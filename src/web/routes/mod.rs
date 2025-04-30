@@ -2,13 +2,9 @@ use actix_web::{web, HttpResponse, Responder};
 use maud::html;
 use std::{collections::HashMap, sync::Arc};
 
-use crate::core::{
-    entity,
-    vault,
-};
+use crate::core::{entity, vault};
 
-use super::pages;
-
+use super::pages::{self, decorate_content_page};
 
 pub async fn web_file(_vault: web::Data<Arc<vault::Vault>>, id: web::Path<String>) -> HttpResponse {
     let file_name = id.into_inner();
@@ -21,7 +17,6 @@ pub async fn web_file(_vault: web::Data<Arc<vault::Vault>>, id: web::Path<String
         _ => pages::error::generate_404(),
     }
 }
-
 
 pub async fn list_entities(vault: web::Data<Arc<vault::Vault>>) -> impl Responder {
     let mut zettels: Vec<(entity::Id, String)> = vault
@@ -39,8 +34,7 @@ pub async fn list_entities(vault: web::Data<Arc<vault::Vault>>) -> impl Responde
 
     let html = pages::decorate_maud_html(
         "Zettel",
-        html! {
-            h1 { "Zettels" }
+        decorate_content_page(html! {
             ul {
                 @for (id, title) in zettels {
                     li {
@@ -48,7 +42,7 @@ pub async fn list_entities(vault: web::Data<Arc<vault::Vault>>) -> impl Responde
                     }
                 }
             }
-        },
+        }),
     );
 
     HttpResponse::Ok().body(html.into_string())

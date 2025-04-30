@@ -11,7 +11,7 @@ use crate::{
         },
         vault,
     },
-    web::pages,
+    web::pages::{self, decorate_content_page},
 };
 
 /// Generate a HTML table containing the metadata of a zettel.
@@ -102,14 +102,14 @@ pub fn generate_show_zettel(
 
     let html = pages::decorate_maud_html(
         &title,
-        html! {
+        decorate_content_page(html! {
             h1 { (title) }
             a href=(format!("{}?action=edit", id.as_safe_uri())) { "Edit" }
             br;
             (generate_metadata_box(&zettel.header))
             br;
             (maud::PreEscaped(content))
-        },
+        }),
     );
 
     HttpResponse::Ok().body(html.into_string())

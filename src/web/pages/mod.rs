@@ -29,6 +29,15 @@ pub fn decorate_maud_html(title: &str, content: maud::PreEscaped<String>) -> mau
     }
 }
 
+pub fn decorate_content_page(content: maud::PreEscaped<String>) -> maud::PreEscaped<String> {
+    maud::html! {
+        div class="content-box" {
+            (content)
+        }
+    }
+}
+
+
 
 
 pub fn generate_download_resource(resource: volt::resource::Resource) -> HttpResponse {
