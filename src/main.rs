@@ -23,12 +23,12 @@ fn suggest_vault_path() -> Option<std::path::PathBuf> {
         }
     }
 
-    let home_dir = std::env::var("HOME").ok()?;
+    let home_dir = std::env::var("HOME").ok();
 
     let vault_path = std::env::var("ATHENA_VAULT_PATH")
         .ok()
-        .and_then(|path| try_vault_path(path))
-        .or_else(|| try_vault_path(format!("{}/Vaults/Obsidian", home_dir)))
+        .and_then(try_vault_path)
+        .or_else(|| home_dir.and_then(|home_dir| try_vault_path(format!("{}/Vaults/Obsidian", home_dir))))
         .or_else(|| try_vault_path("./example"));
     
     vault_path
