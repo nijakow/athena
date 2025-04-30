@@ -1,3 +1,5 @@
+use std::result;
+
 use crate::formats::markdown;
 
 use super::{Link, Node, Nodes};
@@ -28,6 +30,7 @@ fn is_url_char(c: char) -> bool {
         || c == '@'
         || c == '%'
         || c == '~'
+        || c == '#'
 }
 
 fn count_leading_chars(s: &str, c: char) -> usize {
@@ -172,6 +175,25 @@ impl ParagraphParser {
         (true, index + i)
     }
 
+    fn collect_chars_until_terminator(
+        &self,
+        index: usize,
+        terminator: &str,
+    ) -> (String, usize) {
+        let mut i = index;
+        let mut result = String::new();
+
+        while !self.at_end(i) {
+            if let (true, new_i) = self.check_at(i, terminator) {
+                return (result, new_i);
+            }
+            result.push(self.at(i).unwrap());
+            i += 1;
+        }
+
+        (result, i)
+    }
+
     fn parse_bold_extra_wrap(&self, nodes: Nodes, i: usize) -> Option<ParseReturn> {
         Some(ParseReturn(Node::Bold(Box::new(Node::Nodes(nodes))), i))
     }
@@ -313,6 +335,64 @@ impl ParagraphParser {
         self.parse_internal_link(index, flags, false)
     }
 
+    fn parse_external_link(
+        &self,
+        index: usize,
+        flags: ParagraphFlags,
+        embed: bool,
+    ) -> Option<ParseReturn> {
+        // External links start with a '[' (not handled by us), then we parse recursively until '](', then we continue to parse until ')'.
+        // We use a recursive call to parse_recursively to parse the nodes until '](', and after that we just loop.
+
+        let result = self.parse_recursively(
+            index,
+            |parser, i| parser.check_at(i, "]("),
+            |_parser, nodes, i| {
+                // We have a link now. We need to parse the url.
+                Some(ParseReturn(Node::Nodes(nodes), i))
+            },
+            flags.with_link(),
+        );
+
+        if let Some(ParseReturn(Node::Nodes(nodes), new_i)) = result {
+            // Collect chars until ')'
+            let (url, new_i) = self.collect_chars_until_terminator(new_i, ")");
+
+            // Parse the url
+            if let Ok(parsed_url) = url::Url::parse(&url) {
+                return Some(ParseReturn(
+                    Node::Link {
+                        embed,
+                        link: Link::with_title(
+                            markdown::LinkKind::External,
+                            markdown::LinkTarget::Url(parsed_url),
+                            nodes,
+                        ),
+                    },
+                    new_i,
+                ));
+            }
+        }
+
+        None
+    }
+
+    fn parse_external_link_unembedded(
+        &self,
+        index: usize,
+        flags: ParagraphFlags,
+    ) -> Option<ParseReturn> {
+        self.parse_external_link(index, flags, false)
+    }
+
+    fn parse_external_link_embedded(
+        &self,
+        index: usize,
+        flags: ParagraphFlags,
+    ) -> Option<ParseReturn> {
+        self.parse_external_link(index, flags, true)
+    }
+
     fn parse_newline(&self, index: usize, _flags: ParagraphFlags) -> Option<ParseReturn> {
         Some(ParseReturn(Node::Newline, index))
     }
@@ -393,7 +473,7 @@ impl ParagraphParser {
             }
         }
 
-        fn find_internal_link(
+        fn find_link(
             parser: &ParagraphParser,
             index: usize,
             flags: ParagraphFlags,
@@ -412,6 +492,16 @@ impl ParagraphParser {
                     ParagraphParser::parse_unembedded_internal_link,
                     new_i,
                 ))
+            } else if let (true, new_i) = parser.check_at(index, "![") {
+                Some(LittleParser::new(
+                    ParagraphParser::parse_external_link_embedded,
+                    new_i,
+                ))
+            } else if let (true, new_i) = parser.check_at(index, "[") {
+                Some(LittleParser::new(
+                    ParagraphParser::parse_external_link_unembedded,
+                    new_i,
+                ))
             } else {
                 None
             }
@@ -423,7 +513,7 @@ impl ParagraphParser {
             find_italic,
             find_tag,
             find_inline_code_block,
-            find_internal_link,
+            find_link,
         ];
 
         finders
