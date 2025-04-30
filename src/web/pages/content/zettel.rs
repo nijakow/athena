@@ -7,7 +7,7 @@ use crate::{
     core::{
         entity::{
             self,
-            zettel::{self, document::conversions::html::AsHtml},
+            zettel::{self, document::conversions::html::{self, AsHtml, HtmlConversionContext}},
         },
         vault,
     },
@@ -15,27 +15,36 @@ use crate::{
 };
 
 /// Generate a HTML table containing the metadata of a zettel.
-fn generate_metadata_box(header: &zettel::Header) -> maud::PreEscaped<String> {
+fn generate_metadata_box(header: &zettel::Header, conversion_context: &HtmlConversionContext) -> maud::PreEscaped<String> {
     let yaml = &header.yaml;
 
     match yaml {
         Some(yaml) => {
-            fn yaml_to_table(yaml: &yaml_rust2::Yaml) -> maud::Markup {
+            fn yaml_to_table(yaml: &yaml_rust2::Yaml, conversion_context: &HtmlConversionContext) -> maud::Markup {
                 use yaml_rust2::Yaml;
+                use AsHtml;
 
-                fn render_yaml_value(value: &Yaml) -> maud::Markup {
+                fn render_yaml_value(value: &Yaml, conversion_context: &HtmlConversionContext) -> maud::Markup {
                     match value {
-                        Yaml::String(s) => maud::html! {
-                            span { (s) }
+                        Yaml::String(s) => {
+                            let parsed = crate::formats::markdown::parser::parse_text_snippet(s).unwrap();
+                            let doc_nodes = zettel::document::conversions::markdown::markdown_nodes_to_node(&parsed).unwrap();
+                            let html = doc_nodes.as_html(conversion_context);
+
+                            maud::html! {
+                                span { 
+                                    (maud::PreEscaped(html))
+                                }
+                            }
                         },
                         Yaml::Array(arr) => maud::html! {
                             ul {
                                 @for item in arr {
-                                    li { (render_yaml_value(item)) }
+                                    li { (render_yaml_value(item, conversion_context)) }
                                 }
                             }
                         },
-                        Yaml::Hash(_hash) => yaml_to_table(value),
+                        Yaml::Hash(_hash) => yaml_to_table(value, conversion_context),
                         Yaml::Integer(i) => maud::html! {
                             span { (i) }
                         },
@@ -62,7 +71,7 @@ fn generate_metadata_box(header: &zettel::Header) -> maud::PreEscaped<String> {
                                     (key.as_str().unwrap_or("Unknown"))
                                 }
                                 td style="padding: 0.5em; border: 1px solid black;" {
-                                    (render_yaml_value(value))
+                                    (render_yaml_value(value, conversion_context))
                                 }
                             }
                         }
@@ -70,7 +79,7 @@ fn generate_metadata_box(header: &zettel::Header) -> maud::PreEscaped<String> {
                 }
             }
 
-            let metadata_table = yaml_to_table(yaml);
+            let metadata_table = yaml_to_table(yaml, conversion_context);
 
             maud::html! {
                 div class="metadata-box" style="margin-top: 1em;" {
@@ -106,7 +115,7 @@ pub fn generate_show_zettel(
             h1 { (title) }
             a href=(format!("{}?action=edit", id.as_safe_uri())) { "Edit" }
             br;
-            (generate_metadata_box(&zettel.header))
+            (generate_metadata_box(&zettel.header, &conversion_context))
             br;
             (maud::PreEscaped(content))
         }),

@@ -622,3 +622,11 @@ impl MarkdownParser {
 pub fn parse_document(text: String) -> Result<markdown::Document, ParseError> {
     MarkdownParser::for_string(text).parse()
 }
+
+///
+/// Parse a text snippet into a list of nodes.
+/// 
+pub fn parse_text_snippet<S: ToString>(content: S) -> Result<super::Nodes, ()> {
+    let parser = ParagraphParser::for_string(content);
+    Ok(parser.parse())
+}

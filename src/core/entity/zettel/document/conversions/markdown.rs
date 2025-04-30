@@ -125,3 +125,9 @@ pub fn markdown_to_document(
         &markdown.blocks,
     )?))
 }
+
+pub fn markdown_nodes_to_node(
+    nodes: &markdown::Nodes,
+) -> Result<document::node::Node, ConversionError> {
+    Ok(document::node::Node::Grouped(convert_nodes(nodes)?))
+}
