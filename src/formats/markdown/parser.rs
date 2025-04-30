@@ -1,6 +1,6 @@
 use crate::formats::markdown;
 
-use super::{Node, Nodes};
+use super::{Link, Node, Nodes};
 
 #[derive(Debug)]
 pub enum ParseError {}
@@ -242,6 +242,71 @@ impl ParagraphParser {
         }
 
         None
+    }
+
+    fn parse_internal_link(
+        &self,
+        index: usize,
+        flags: ParagraphFlags,
+        embed: bool,
+    ) -> Option<ParseReturn> {
+        // Internal links are a bit tricky. We need to parse until we reach either the
+        // end of the string or ']]' or '|' (if we reach a '|', we need to recursively parse
+        // the text after it).
+
+        let mut current = String::new();
+
+        let mut i = index;
+
+        let mut link = String::new();
+
+        while !self.at_end(i) {
+            if let (true, new_i) = self.check_at(i, "]]") {
+                return Some(ParseReturn(
+                    Node::Link {
+                        embed,
+                        link: Link::with_target(markdown::LinkKind::Internal, markdown::LinkTarget::Zettel(link))
+                    },
+                    new_i,
+                ));
+            } else if let (true, new_i) = self.check_at(i, "|") {
+                // Call the parser recursively to parse the text after the '|'.
+                // As a terminal condition, we check for ']]'.
+                // The wrapper function takes care of the rest.
+                return self.parse_recursively(
+                    new_i,
+                    |parser, i| parser.check_at(i, "]]"),
+                    |parser, nodes, i| {
+                        Some(ParseReturn(
+                            Node::Link {
+                                embed,
+                                link: Link::with_target(markdown::LinkKind::Internal, markdown::LinkTarget::Zettel(link))
+                            },
+                            i,
+                        ))
+                    },
+                    flags.with_link(),
+                );
+            }
+        }
+
+        None
+    }
+
+    fn parse_embedded_internal_link(
+        &self,
+        index: usize,
+        flags: ParagraphFlags,
+    ) -> Option<ParseReturn> {
+        self.parse_internal_link(index, flags, true)
+    }
+
+    fn parse_unembedded_internal_link(
+        &self,
+        index: usize,
+        flags: ParagraphFlags,
+    ) -> Option<ParseReturn> {
+        self.parse_internal_link(index, flags, false)
     }
 
     fn try_find_parsers(&self, index: usize, flags: ParagraphFlags) -> Vec<LittleParser> {
