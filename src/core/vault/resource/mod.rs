@@ -114,6 +114,7 @@ pub struct Metadata {
     pub resource_type: Option<Type>,
 }
 
+#[derive(Debug)]
 pub struct Resource {
     path: std::path::PathBuf,
 }

@@ -3,12 +3,11 @@ use super::{
     entity::{self, zettel},
 };
 
-use crate::{semantic, core::vault};
+use crate::{core::vault, semantic};
 
-pub mod volume;
 pub mod caching;
 pub mod resource;
-
+pub mod volume;
 
 pub struct Vault {
     volumes: vault::volume::Volumes,
@@ -20,13 +19,11 @@ pub type VaultOpenResult = Result<Vault, ()>;
 impl Vault {
     fn new(config: config::Config) -> Vault {
         let snapshot_path = config.snapshot_path();
-        
-        let volumes = vec![
-            vault::volume::Volume::new(
-                config.vault_path.unwrap(),
-                vault::volume::flags::Flags::new().with_zettels(),
-            )
-        ];
+
+        let volumes = vec![vault::volume::Volume::new(
+            config.vault_path.unwrap(),
+            vault::volume::flags::Flags::new().with_zettels(),
+        )];
 
         Vault {
             volumes: vault::volume::Volumes::new(snapshot_path, volumes),
@@ -38,25 +35,21 @@ impl Vault {
         Ok(Self::new(config))
     }
 
-    pub fn list_entities<'a>(&'a self) -> Option<impl Iterator<Item = entity::Id> + 'a> {
+    pub fn list_entities(&self) -> Vec<entity::Id> {
         match self.cache.write() {
-            Ok(mut cache) => {
-                Some(
-                    self.volumes
-                        .list_resources()
-                        .map(move |resource| entity::Id::for_resource(&resource, &mut cache))
-                )
-            }
-            Err(_) => None,
+            Ok(mut cache) => self
+                .volumes
+                .list_resources()
+                .map(move |resource| entity::Id::for_resource(&resource, &mut cache))
+                .collect::<Vec<_>>(),
+            Err(_) => vec![],
         }
     }
 
     fn find_resource_for_id(&self, id: &entity::Id) -> Option<vault::resource::Resource> {
         match self.cache.write() {
-            Ok(mut cache) => {
-                self.volumes.find_resource_for_id(id, &mut cache)
-            }
-            Err(_) => None
+            Ok(mut cache) => self.volumes.find_resource_for_id(id, &mut cache),
+            Err(_) => None,
         }
     }
 
@@ -83,13 +76,33 @@ impl Vault {
     }
 
     pub fn title_of_entity(&self, id: &entity::Id) -> Option<String> {
+        let perhaps_title = match self.cache.read() {
+            Ok(cache) => cache.get_title(id).cloned(),
+            Err(_) => None,
+        };
+
+        if let Some(title) = perhaps_title {
+            return Some(title);
+        }
 
         let entity = self.load_entity(id)?;
 
-        match entity {
+        let title = match entity {
             entity::Entity::File(file) => file.metadata().title(),
-            entity::Entity::Zettel(zettel) => zettel.header().title.clone().or_else(|| Some(id.id().to_string())),
+            entity::Entity::Zettel(zettel) => zettel
+                .header()
+                .title
+                .clone()
+                .or_else(|| Some(id.id().to_string())),
+        };
+
+        if let Some(title) = &title {
+            if let Ok(mut cache) = self.cache.write() {
+                cache.set_title(id.clone(), title.clone());
+            }
         }
+
+        title
     }
 
     pub fn tick(&self) {
@@ -99,11 +112,9 @@ impl Vault {
 
 impl semantic::Scannable for Vault {
     fn iterate_info_items<F: FnMut(semantic::InfoItem)>(&self, func: &mut F) {
-        if let Some(entities) = self.list_entities() {
-            for entity in entities {
-                if let Some(entity) = self.load_entity(&entity) {
-                    entity.iterate_info_items(func);
-                }
+        for entity in self.list_entities() {
+            if let Some(entity) = self.load_entity(&entity) {
+                entity.iterate_info_items(func);
             }
         }
     }
