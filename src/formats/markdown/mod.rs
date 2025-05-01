@@ -3,14 +3,14 @@ use url;
 
 pub mod parser;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum LinkKind {
     Internal,
     External,
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum LinkTarget {
     Zettel(String),
     Url(url::Url),

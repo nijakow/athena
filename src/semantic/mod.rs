@@ -1,11 +1,14 @@
+use crate::core::entity::zettel::document::node::reference::ReferenceTarget;
+
 
 pub mod knowledge;
 
 
+#[derive(Debug, Clone)]
 pub enum InfoItem {
     Task,
     Tag(String),
-    Link,
+    Link(ReferenceTarget),
 }
 
 
