@@ -1,6 +1,6 @@
 use std::sync::RwLock;
 
-use crate::volt::resource;
+use crate::volt::{self, resource};
 
 pub struct VolumeCache {
     pub file_name_cache: std::collections::HashMap<String, std::path::PathBuf>,
@@ -12,16 +12,17 @@ pub struct VolumeCacheSnapshot {
     pub resource_cache: resource::cache::ResourceCacheSnapshot,
 }
 
-impl crate::util::snapshotting::Snapshottable for VolumeCache {
+impl<'a> crate::util::snapshotting::Snapshottable<'a> for VolumeCache {
     type Snapshot = VolumeCacheSnapshot;
+    type Parameter = &'a volt::volume::Volume;
 
     fn from_snapshot(&mut self, snapshot: Self::Snapshot) {
         self.resource_cache.write().unwrap().from_snapshot(snapshot.resource_cache);
     }
 
-    fn take_snapshot(&self) -> Self::Snapshot {
+    fn take_snapshot(&self, parameter: Self::Parameter) -> Self::Snapshot {
         VolumeCacheSnapshot {
-            resource_cache: self.resource_cache.read().unwrap().take_snapshot(),
+            resource_cache: self.resource_cache.read().unwrap().take_snapshot(parameter),
         }
     }
 }

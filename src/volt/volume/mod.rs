@@ -1,12 +1,12 @@
 use std::sync::RwLock;
 
 use crate::core::entity;
-use crate::semantic;
 use crate::volt::resource;
 
 pub mod cache;
 pub mod flags;
 pub mod info;
+pub mod path;
 
 pub type VolumeId = crate::util::hashing::Sha256;
 
@@ -75,6 +75,18 @@ impl Volume {
         &self.id
     }
 
+    pub fn construct_volume_path(&self, path: &std::path::Path) -> Option<path::VolumePath> {
+        let path_relative_to_base = path
+            .strip_prefix(&self.base_path)
+            .ok()
+            .map(|p| p.to_path_buf());
+
+        match path_relative_to_base {
+            Some(path) => Some(path::VolumePath::new(self.id.clone(), path)),
+            None => None,
+        }
+    }
+
     pub fn list_files(&self) -> impl Iterator<Item = std::path::PathBuf> {
         fn condition(
             entry: Result<walkdir::DirEntry, walkdir::Error>,
@@ -101,11 +113,10 @@ impl Volume {
         &'a self,
         func: impl Fn(&resource::Resource, &mut resource::cache::ResourceCache) -> T + 'a,
     ) -> impl Iterator<Item = T> + 'a {
-        self.list_resources()
-            .map(move |resource| {
-                let mut resource_cache = self.cache.resource_cache.write().unwrap();
-                func(&resource, &mut *resource_cache)
-            })
+        self.list_resources().map(move |resource| {
+            let mut resource_cache = self.cache.resource_cache.write().unwrap();
+            func(&resource, &mut *resource_cache)
+        })
     }
 
     pub fn file_if_exists<S: ToString>(&self, name: S) -> Option<std::path::PathBuf> {
@@ -182,18 +193,18 @@ impl Volume {
     }
 }
 
-impl crate::util::snapshotting::Snapshottable for Volume {
+impl<'a> crate::util::snapshotting::Snapshottable<'a> for Volume {
     type Snapshot = cache::VolumeCacheSnapshot;
+    type Parameter = &'a Self;
 
     fn from_snapshot(&mut self, snapshot: Self::Snapshot) {
         self.cache.from_snapshot(snapshot);
     }
 
-    fn take_snapshot(&self) -> Self::Snapshot {
-        self.cache.take_snapshot()
+    fn take_snapshot(&self, parameter: Self::Parameter) -> Self::Snapshot {
+        self.cache.take_snapshot(parameter)
     }
 }
-
 
 pub struct Volumes {
     snapshot_path: std::path::PathBuf,
@@ -202,7 +213,10 @@ pub struct Volumes {
 
 impl Volumes {
     pub fn new(snapshot_path: std::path::PathBuf, vols: Vec<Volume>) -> Self {
-        let mut volumes = Volumes { snapshot_path, vols };
+        let mut volumes = Volumes {
+            snapshot_path,
+            vols,
+        };
 
         fn load_snapshot(path: &std::path::Path) -> Option<cache::VolumesCacheSnapshot> {
             let snapshot = cache::VolumesCacheSnapshot::load_from_file(path).ok()?;
@@ -214,7 +228,7 @@ impl Volumes {
             use crate::util::snapshotting::Snapshottable;
 
             println!("Loading snapshot into volumes...");
-            
+
             volumes.from_snapshot(snapshot);
         }
 
@@ -222,15 +236,11 @@ impl Volumes {
     }
 
     pub fn volume_by_id(&self, id: &VolumeId) -> Option<&Volume> {
-        self.vols
-            .iter()
-            .find(|volume| volume.id() == id)
+        self.vols.iter().find(|volume| volume.id() == id)
     }
 
     pub fn volume_by_id_mut(&mut self, id: &VolumeId) -> Option<&mut Volume> {
-        self.vols
-            .iter_mut()
-            .find(|volume| volume.id() == id)
+        self.vols.iter_mut().find(|volume| volume.id() == id)
     }
 
     pub fn list_resources<'a>(&'a self) -> impl Iterator<Item = resource::Resource> + 'a {
@@ -241,9 +251,8 @@ impl Volumes {
 
     pub fn map_resource_func<'a, T>(
         &'a self,
-        func: impl Fn(&resource::Resource, &mut resource::cache::ResourceCache) -> T + Clone + 'a
-    ) -> impl Iterator<Item = T> + 'a
-    {
+        func: impl Fn(&resource::Resource, &mut resource::cache::ResourceCache) -> T + Clone + 'a,
+    ) -> impl Iterator<Item = T> + 'a {
         self.vols
             .iter()
             .flat_map(move |storage| storage.map_resource_func(func.clone()))
@@ -259,7 +268,7 @@ impl Volumes {
     fn take_and_save_snapshot(&self) {
         use crate::util::snapshotting::Snapshottable;
 
-        let snapshot = self.take_snapshot();
+        let snapshot = self.take_snapshot(());
 
         let path = &self.snapshot_path;
 
@@ -277,9 +286,10 @@ impl Volumes {
     }
 }
 
-impl crate::util::snapshotting::Snapshottable for Volumes {
+impl<'a> crate::util::snapshotting::Snapshottable<'a> for Volumes {
     type Snapshot = cache::VolumesCacheSnapshot;
-    
+    type Parameter = ();
+
     fn from_snapshot(&mut self, snapshot: Self::Snapshot) {
         for (id, volume_snapshot) in snapshot.volumes {
             if let Some(volume) = self.volume_by_id_mut(&id) {
@@ -287,12 +297,12 @@ impl crate::util::snapshotting::Snapshottable for Volumes {
             }
         }
     }
-    
-    fn take_snapshot(&self) -> Self::Snapshot {
+
+    fn take_snapshot(&self, _parameter: Self::Parameter) -> Self::Snapshot {
         let volumes = self
             .vols
             .iter()
-            .map(|volume| (volume.id().clone(), volume.take_snapshot()))
+            .map(|volume| (volume.id().clone(), volume.take_snapshot(&volume)))
             .collect();
 
         cache::VolumesCacheSnapshot { volumes }
