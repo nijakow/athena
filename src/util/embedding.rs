@@ -1,6 +1,6 @@
 use crate::core::entity::{self, zettel::document::conversions::html::HtmlConversionContext};
 
-use crate::volt::resource;
+use crate::core::vault::resource;
 
 fn content_not_displayed() -> maud::Markup {
     maud::html! {
@@ -85,7 +85,7 @@ pub fn generate_embed_for_url_or_not_displayed(url: &url::Url) -> maud::PreEscap
 }
 
 pub fn embed_file_for_id<S: ToString>(
-    file: &crate::volt::resource::file::FileContent,
+    file: &crate::core::vault::resource::file::FileContent,
     id: &entity::Id,
     title: S,
     download: bool,

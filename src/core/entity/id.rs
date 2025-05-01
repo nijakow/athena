@@ -1,5 +1,5 @@
 
-use crate::volt;
+use crate::core::vault;
 
 use crate::util::hashing::Sha256;
 
@@ -38,7 +38,7 @@ impl Id {
         Id::from_string(id)
     }
 
-    pub(crate) fn for_resource(resource: &volt::resource::Resource) -> Id {
+    pub(crate) fn for_resource(resource: &vault::resource::Resource) -> Id {
         if let Some(hash) = resource.content_hash() {
             Id::from_sha256(hash.clone())
         } else {

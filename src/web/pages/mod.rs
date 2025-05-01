@@ -7,8 +7,6 @@ use crate::core::{
     vault,
 };
 
-use crate::volt;
-
 pub mod error;
 pub mod content;
 
@@ -40,7 +38,7 @@ pub fn decorate_content_page(content: maud::PreEscaped<String>) -> maud::PreEsca
 
 
 
-pub fn generate_download_resource(resource: volt::resource::Resource) -> HttpResponse {
+pub fn generate_download_resource(resource: vault::resource::Resource) -> HttpResponse {
     let mime = resource
         .metadata()
         .resource_type
@@ -57,7 +55,7 @@ pub fn generate_download_resource(resource: volt::resource::Resource) -> HttpRes
     HttpResponse::Ok().content_type(mime).body(content)
 }
 
-pub fn generate_show_file(id: entity::Id, file: volt::resource::file::FileContent) -> HttpResponse {
+pub fn generate_show_file(id: entity::Id, file: vault::resource::file::FileContent) -> HttpResponse {
     let title = file
         .metadata()
         .title()

@@ -3,10 +3,14 @@ use super::{
     entity::{self, zettel},
 };
 
-use crate::{semantic, volt};
+use crate::{semantic, core::vault};
+
+pub mod volume;
+pub mod resource;
+
 
 pub struct Vault {
-    volumes: volt::volume::Volumes,
+    volumes: vault::volume::Volumes,
 }
 
 pub type VaultOpenResult = Result<Vault, ()>;
@@ -16,14 +20,14 @@ impl Vault {
         let snapshot_path = config.snapshot_path();
         
         let volumes = vec![
-            volt::volume::Volume::new(
+            vault::volume::Volume::new(
                 config.vault_path.unwrap(),
-                volt::volume::flags::Flags::new().with_zettels(),
+                vault::volume::flags::Flags::new().with_zettels(),
             )
         ];
 
         Vault {
-            volumes: volt::volume::Volumes::new(snapshot_path, volumes),
+            volumes: vault::volume::Volumes::new(snapshot_path, volumes),
         }
     }
 
@@ -35,11 +39,11 @@ impl Vault {
         self.volumes.map_resource_func(entity::Id::for_resource)
     }
 
-    fn find_resource_for_id(&self, id: &entity::Id) -> Option<volt::resource::Resource> {
+    fn find_resource_for_id(&self, id: &entity::Id) -> Option<vault::resource::Resource> {
         self.volumes.find_resource_for_id(id)
     }
 
-    pub fn load_resource(&self, id: &entity::Id) -> Option<volt::resource::Resource> {
+    pub fn load_resource(&self, id: &entity::Id) -> Option<vault::resource::Resource> {
         self.find_resource_for_id(id)
     }
 

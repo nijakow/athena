@@ -1,5 +1,5 @@
 use crate::core::entity;
-use crate::volt::resource;
+use crate::core::vault::resource;
 
 pub mod flags;
 pub mod info;

@@ -127,7 +127,7 @@ impl From<Document> for ObsidianDocument {
 
 
 pub fn parse_obsidian_markdown(
-    content: crate::volt::resource::file::FileContent,
+    content: crate::core::vault::resource::file::FileContent,
 ) -> Result<ObsidianDocument, ()> {
     match content.extract_content_as_string() {
         Some(content) => {
