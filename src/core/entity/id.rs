@@ -1,5 +1,5 @@
 
-use crate::core::vault;
+use crate::core::vault::{self, caching};
 
 use crate::util::hashing::Sha256;
 
@@ -38,8 +38,8 @@ impl Id {
         Id::from_string(id)
     }
 
-    pub(crate) fn for_resource(resource: &vault::resource::Resource) -> Id {
-        if let Some(hash) = resource.content_hash() {
+    pub(crate) fn for_resource(resource: &vault::resource::Resource, cache: &mut caching::GlobalCache) -> Id {
+        if let Some(hash) = resource.content_hash(cache) {
             Id::from_sha256(hash.clone())
         } else {
             let file_name_without_extension = resource

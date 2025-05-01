@@ -6,11 +6,13 @@ use super::{
 use crate::{semantic, core::vault};
 
 pub mod volume;
+pub mod caching;
 pub mod resource;
 
 
 pub struct Vault {
     volumes: vault::volume::Volumes,
+    cache: std::sync::RwLock<caching::GlobalCache>,
 }
 
 pub type VaultOpenResult = Result<Vault, ()>;
@@ -28,6 +30,7 @@ impl Vault {
 
         Vault {
             volumes: vault::volume::Volumes::new(snapshot_path, volumes),
+            cache: std::sync::RwLock::new(caching::GlobalCache::new()),
         }
     }
 
@@ -35,12 +38,26 @@ impl Vault {
         Ok(Self::new(config))
     }
 
-    pub fn list_entities<'a>(&'a self) -> impl Iterator<Item = entity::Id> + 'a {
-        self.volumes.map_resource_func(entity::Id::for_resource)
+    pub fn list_entities<'a>(&'a self) -> Option<impl Iterator<Item = entity::Id> + 'a> {
+        match self.cache.write() {
+            Ok(mut cache) => {
+                Some(
+                    self.volumes
+                        .list_resources()
+                        .map(move |resource| entity::Id::for_resource(&resource, &mut cache))
+                )
+            }
+            Err(_) => None,
+        }
     }
 
     fn find_resource_for_id(&self, id: &entity::Id) -> Option<vault::resource::Resource> {
-        self.volumes.find_resource_for_id(id)
+        match self.cache.write() {
+            Ok(mut cache) => {
+                self.volumes.find_resource_for_id(id, &mut cache)
+            }
+            Err(_) => None
+        }
     }
 
     pub fn load_resource(&self, id: &entity::Id) -> Option<vault::resource::Resource> {
@@ -82,9 +99,11 @@ impl Vault {
 
 impl semantic::Scannable for Vault {
     fn iterate_info_items<F: FnMut(semantic::InfoItem)>(&self, func: &mut F) {
-        for entity in self.list_entities() {
-            if let Some(entity) = self.load_entity(&entity) {
-                entity.iterate_info_items(func);
+        if let Some(entities) = self.list_entities() {
+            for entity in entities {
+                if let Some(entity) = self.load_entity(&entity) {
+                    entity.iterate_info_items(func);
+                }
             }
         }
     }

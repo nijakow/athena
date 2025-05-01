@@ -1,11 +1,14 @@
 use crate::core::entity;
 use crate::core::vault::resource;
 
+use super::caching;
+
 pub mod flags;
 pub mod info;
 pub mod path;
 
 pub type VolumeId = crate::util::hashing::Sha256;
+pub type VolumePath = path::VolumePath;
 
 pub struct Volume {
     id: VolumeId,
@@ -145,11 +148,11 @@ impl Volume {
             .map(|path| resource::Resource::from_path(path))
     }
 
-    pub fn resource_by_id(&self, id: &entity::Id) -> Option<resource::Resource> {
+    pub fn resource_by_id(&self, id: &entity::Id, cache: &mut caching::GlobalCache) -> Option<resource::Resource> {
         match id {
             entity::Id::Sha256(sha256) => {
                 for resource in self.list_resources() {
-                    if let Some(hash) = resource.content_hash() {
+                    if let Some(hash) = resource.content_hash(cache) {
                         if hash == *sha256 {
                             return Some(resource);
                         }
@@ -218,10 +221,10 @@ impl Volumes {
             .flat_map(move |storage| storage.map_resource_func(func.clone()))
     }
 
-    pub fn find_resource_for_id(&self, id: &entity::Id) -> Option<resource::Resource> {
+    pub fn find_resource_for_id(&self, id: &entity::Id, cache: &mut caching::GlobalCache) -> Option<resource::Resource> {
         self.vols
             .iter()
-            .filter_map(|storage| storage.resource_by_id(id))
+            .filter_map(|storage| storage.resource_by_id(id, cache))
             .next()
     }
 

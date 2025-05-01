@@ -1,3 +1,5 @@
+use super::caching;
+
 
 pub mod file;
 pub mod types;
@@ -136,12 +138,18 @@ impl Resource {
         &self.path
     }
 
-    pub fn content_hash(&self) -> Option<crate::util::hashing::Sha256> {
+    pub fn content_hash(&self, cache: &mut caching::GlobalCache) -> Option<crate::util::hashing::Sha256> {
         if self.is_usually_hash_addressable() {
-            println!("Calculating hash for {:?}", self.path);
-            let content = self.read_to_bytes().ok()?;
-            let hash = crate::util::hashing::Sha256::hash_bytes(&content);
-            Some(hash)
+            match cache.get_hash(&self.path) {
+                Some(hash) => return Some(hash.clone()),
+                None => {
+                    println!("Calculating hash for {:?}", self.path);
+                    let content = self.read_to_bytes().ok()?;
+                    let hash = crate::util::hashing::Sha256::hash_bytes(&content);
+                    cache.set_hash(self.path.clone(), hash.clone());
+                    Some(hash)
+                }
+            }
         } else {
             None
         }

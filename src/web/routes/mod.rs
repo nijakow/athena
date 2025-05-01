@@ -19,16 +19,18 @@ pub async fn web_file(_vault: web::Data<Arc<vault::Vault>>, id: web::Path<String
 }
 
 pub async fn list_entities(vault: web::Data<Arc<vault::Vault>>) -> impl Responder {
-    let mut zettels: Vec<(entity::Id, String)> = vault
-        .list_entities()
-        .into_iter()
-        .map(|id| {
-            let title = vault
-                .title_of_entity(&id)
-                .unwrap_or_else(|| "Untitled".to_string());
-            (id, title)
-        })
-        .collect::<Vec<_>>();
+    let mut zettels: Vec<(entity::Id, String)> = match vault.list_entities() {
+        Some(it) => it
+            .into_iter()
+            .map(|id| {
+                let title = vault
+                    .title_of_entity(&id)
+                    .unwrap_or_else(|| "Untitled".to_string());
+                (id, title)
+            })
+            .collect::<Vec<_>>(),
+        None => vec![],
+    };
 
     zettels.sort_by(|a, b| a.1.cmp(&b.1));
 
