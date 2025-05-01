@@ -1,3 +1,5 @@
+use crate::semantic;
+
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Heading {
@@ -85,4 +87,17 @@ pub enum Block {
     Callout(callout::Callout),
     BulletPoint(bullet_point::BulletPoint),
     Paragraph(Paragraph),
+}
+
+impl semantic::Scannable for Block {
+    fn iterate_info_items<F: FnMut(semantic::InfoItem)>(&self, func: &mut F) {
+        match self {
+            Block::Heading(heading) => heading.nodes.iterate_info_items(func),
+            Block::Line => {}
+            Block::CodeBlock(_) => {}
+            Block::Callout(callout) => callout.blocks.iterate_info_items(func),
+            Block::BulletPoint(bullet_point) => bullet_point.nodes.iterate_info_items(func),
+            Block::Paragraph(paragraph) => paragraph.nodes.iterate_info_items(func),
+        }
+    }
 }

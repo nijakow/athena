@@ -1,6 +1,7 @@
 use std::sync::RwLock;
 
 use crate::core::entity;
+use crate::semantic;
 use crate::volt::resource;
 
 pub mod cache;

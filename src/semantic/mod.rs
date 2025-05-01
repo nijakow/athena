@@ -4,11 +4,11 @@ pub mod knowledge;
 
 pub enum InfoItem {
     Task,
-    Tag,
+    Tag(String),
     Link,
 }
 
 
 pub trait Scannable {
-    fn extract_info_items(&self, text: &str) -> Vec<InfoItem>;
+    fn iterate_info_items<F: FnMut(InfoItem)>(&self, func: &mut F);
 }

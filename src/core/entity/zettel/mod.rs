@@ -1,3 +1,5 @@
+use crate::semantic;
+
 
 pub mod document;
 
@@ -86,5 +88,15 @@ impl Zettel {
 
     pub fn body_as_document(&self) -> Option<&document::Document> {
         self.body.as_document()
+    }
+}
+
+impl semantic::Scannable for Zettel {
+
+    fn iterate_info_items<F: FnMut(semantic::InfoItem)>(&self, func: &mut F) {
+        match &self.body {
+            Body::Document(doc) => doc.iterate_info_items(func),
+            _ => {}
+        }
     }
 }

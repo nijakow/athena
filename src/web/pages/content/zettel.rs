@@ -109,6 +109,22 @@ pub fn generate_show_zettel(
         .unwrap()
         .as_html(&conversion_context);
 
+    {
+        use crate::semantic;
+        use crate::semantic::Scannable;
+
+        let mut info_items = Vec::new();
+        zettel.iterate_info_items(&mut |item| {
+            match item {
+                semantic::InfoItem::Task => info_items.push("Task".to_string()),
+                semantic::InfoItem::Tag(tag) => info_items.push(format!("#{}", tag)),
+                semantic::InfoItem::Link => info_items.push("Link".to_string()),
+            }
+        });
+
+        println!("Info items: {:#?}", info_items);
+    }
+
     let html = pages::decorate_maud_html(
         &title,
         decorate_content_page(html! {

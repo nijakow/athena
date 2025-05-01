@@ -1,4 +1,4 @@
-use crate::volt;
+use crate::{semantic, volt};
 
 
 pub mod id;
@@ -31,6 +31,15 @@ impl Entity {
                 resource.read_content().map(|content| Entity::File(content)).map_err(|_| ())
             }
             None => Err(()),
+        }
+    }
+}
+
+impl semantic::Scannable for Entity {
+    fn iterate_info_items<F: FnMut(semantic::InfoItem)>(&self, func: &mut F) {
+        match self {
+            Entity::File(_) => {}
+            Entity::Zettel(zettel) => zettel.iterate_info_items(func),
         }
     }
 }

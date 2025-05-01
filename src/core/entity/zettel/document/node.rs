@@ -1,4 +1,6 @@
 
+use crate::semantic;
+
 use super::Nodes;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
@@ -36,4 +38,19 @@ pub enum Node {
     Styled(Style, Box<Node>),
     Reference(reference::Reference),
     Grouped(Nodes),
+}
+
+impl semantic::Scannable for Node {
+    fn iterate_info_items<F: FnMut(semantic::InfoItem)>(&self, func: &mut F) {
+        match self {
+            Node::Text(text) => {}
+            Node::Tag(tag) => {
+                func(semantic::InfoItem::Tag(tag.clone()));
+            }
+            Node::Styled(_, node) => node.iterate_info_items(func),
+            Node::Reference(reference) => {},
+            Node::Grouped(nodes) => nodes.iterate_info_items(func),
+            _ => {}
+        }
+    }
 }

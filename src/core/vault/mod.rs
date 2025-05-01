@@ -3,7 +3,7 @@ use super::{
     entity::{self, zettel},
 };
 
-use crate::volt;
+use crate::{semantic, volt};
 
 pub struct Vault {
     volumes: volt::volume::Volumes,
@@ -73,5 +73,15 @@ impl Vault {
 
     pub fn tick(&self) {
         self.volumes.tick();
+    }
+}
+
+impl semantic::Scannable for Vault {
+    fn iterate_info_items<F: FnMut(semantic::InfoItem)>(&self, func: &mut F) {
+        for entity in self.list_entities() {
+            if let Some(entity) = self.load_entity(&entity) {
+                entity.iterate_info_items(func);
+            }
+        }
     }
 }
