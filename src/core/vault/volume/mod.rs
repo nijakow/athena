@@ -82,6 +82,16 @@ impl Volume {
         }
     }
 
+    pub fn reconstruct_full_path(&self, path: &path::VolumePath) -> Option<std::path::PathBuf> {
+        if path.volume() != self.id() {
+            return None;
+        }
+
+        let full_path = self.base_path.join(path.path());
+
+        Some(full_path)
+    }
+
     pub fn list_files(&self) -> impl Iterator<Item = std::path::PathBuf> {
         fn condition(
             entry: Result<walkdir::DirEntry, walkdir::Error>,
@@ -99,11 +109,10 @@ impl Volume {
             .filter_map(condition)
     }
 
-    pub fn list_resources(&self) -> impl Iterator<Item = resource::Resource> {
-        let volume_id = self.id.clone();
-
+    pub fn list_resources<'a>(&'a self) -> impl Iterator<Item = resource::Resource> + 'a {
         self.list_files().map(move |path| {
-            resource::Resource::from_path(VolumePath::new(volume_id.clone(), path))
+            let vp = self.construct_volume_path(&path).unwrap();
+            resource::Resource::from_path(vp)
         })
     }
 
@@ -148,7 +157,7 @@ impl Volume {
 
     fn resource_by_short_name(&self, name: &str) -> Option<resource::Resource> {
         self.file_by_short_name(name)
-            .map(|path| resource::Resource::from_path(VolumePath::new(self.id.clone(), path)))
+            .map(|path| resource::Resource::from_path(self.construct_volume_path(&path).unwrap()))
     }
 
     pub fn resource_by_id(
@@ -192,7 +201,6 @@ impl Volume {
 }
 
 pub type VolumeArc = std::sync::Arc<Volume>;
-
 
 pub struct Volumes {
     vols: Vec<VolumeArc>,

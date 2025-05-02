@@ -128,7 +128,16 @@ impl Vault {
 
 impl resource::ResourceInterface for Vault {
     fn open_for_reading(&self, path: &volume::VolumePath) -> Result<Box<dyn std::io::Read>, std::io::Error> {
-        std::fs::File::open(path.path()).map(|f| Box::new(f) as Box<dyn std::io::Read>)
+        let volume = self
+            .volumes
+            .volume_by_id(path.volume())
+            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "Volume not found"))?;
+
+        let translated = volume.reconstruct_full_path(&path).ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::NotFound, "Path not found in volume")
+        })?;
+
+        std::fs::File::open(translated).map(|f| Box::new(f) as Box<dyn std::io::Read>)
     }
 }
 
