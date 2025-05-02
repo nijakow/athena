@@ -1,13 +1,21 @@
 use crate::util::hashing::Sha256;
 use std::collections::HashMap;
 
+
+pub trait Stored {
+    fn is_obsolete(&self) -> bool {
+        false
+    }
+}
+
+
 pub struct EntryInfo {
     pub dirty: bool,
 }
 
 pub struct DataStorage<T>
 where
-    T: serde::Serialize + for<'de> serde::Deserialize<'de> + Default,
+    T: serde::Serialize + for<'de> serde::Deserialize<'de> + Default + Stored,
 {
     base_path: std::path::PathBuf,
     cached: HashMap<Sha256, T>,
@@ -16,7 +24,7 @@ where
 
 impl<T> DataStorage<T>
 where
-    T: serde::Serialize + for<'de> serde::Deserialize<'de> + Default,
+    T: serde::Serialize + for<'de> serde::Deserialize<'de> + Default + Stored,
 {
     pub fn open(base_path: std::path::PathBuf, create: bool) -> Result<Self, ()> {
         fn check_preconditions(base_path: &std::path::Path, create: bool) -> bool {
@@ -84,6 +92,23 @@ where
         Ok(())
     }
 
+    fn delete(&mut self, key: &Sha256) -> Result<(), ()> {
+        // Delete from the cache and the file system
+        
+        println!("Deleting data for key {}", key.as_string());
+
+        let path = self.local_path_for_key(key);
+
+        self.cached.remove(key);
+        self.entry_info.remove(key);
+
+        if path.exists() {
+            std::fs::remove_file(path).map_err(|_| ())?;
+        }
+
+        Ok(())
+    }
+
     fn ensure_in_cache(&mut self, key: &Sha256) -> Result<(), ()> {
         if !self.cached.contains_key(key) {
             let data = self.read(key)?;
@@ -115,6 +140,7 @@ where
     {
         let key = key.into();
         let mut data = self.read(&key).map_err(|_| ())?;
+        
         f(&mut data);
 
         // Mark the entry as dirty
@@ -124,18 +150,38 @@ where
             .dirty = true;
 
         self.cached.insert(key, data);
+
         Ok(())
     }
 
+    pub fn purge<K>(&mut self, key: K) -> Result<(), ()>
+    where
+        K: Into<Sha256>,
+    {
+        let key = key.into();
+        self.delete(&key)
+    }
+
     pub fn flush_cache(&mut self) -> Result<(), ()> {
+        let mut to_delete = Vec::new();
+        
         for (key, data) in self.cached.iter() {
             if let Some(info) = self.entry_info.get(key) {
                 if info.dirty {
-                    self.write(key, data).map_err(|_| ())?;
-                    // Mark the entry as clean
-                    self.entry_info.get_mut(key).unwrap().dirty = false;
+                    if data.is_obsolete() {
+                        to_delete.push(key.clone());
+                    } else {
+                        self.write(key, data).map_err(|_| ())?;
+                        // Mark the entry as clean
+                        self.entry_info.get_mut(key).unwrap().dirty = false;
+                    }
                 }
             }
+        }
+
+        // Remove obsolete entries
+        for key in to_delete {
+            self.delete(&key).map_err(|_| ())?;
         }
 
         Ok(())
@@ -145,8 +191,16 @@ where
         let pairs = self.cached.drain().collect::<Vec<_>>();
 
         for (key, data) in pairs {
-            if let Some(info) = self.entry_info.get(&key) {
-                if info.dirty {
+            let is_dirty = if let Some(info) = self.entry_info.get(&key) {
+                info.dirty
+            } else {
+                false
+            };
+
+            if is_dirty {
+                if data.is_obsolete() {
+                    self.delete(&key).map_err(|_| ())?;
+                } else {
                     self.write(&key, &data).map_err(|_| ())?;
                 }
             }
@@ -160,7 +214,7 @@ where
 
 impl<T> Drop for DataStorage<T>
 where
-    T: serde::Serialize + for<'de> serde::Deserialize<'de> + Default,
+    T: serde::Serialize + for<'de> serde::Deserialize<'de> + Default + Stored,
 {
     fn drop(&mut self) {
         if let Err(_) = self.flush_and_clear_cache() {

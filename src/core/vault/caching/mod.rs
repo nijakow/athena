@@ -8,7 +8,7 @@ fn convert_path_to_hash(path: &std::path::Path) -> hashing::Sha256 {
 
 pub mod caches {
     pub mod by_path {
-        use crate::util::hashing;
+        use crate::{core::vault::caching::storage::Stored, util::hashing};
 
         #[derive(serde::Serialize, serde::Deserialize)]
         pub struct Metadata {
@@ -34,9 +34,17 @@ pub mod caches {
                 Self::new()
             }
         }
+
+        impl Stored for Metadata {
+            fn is_obsolete(&self) -> bool {
+                self.hash.is_none()
+            }
+        }
     }
 
     pub mod by_sha256 {
+        use crate::core::vault::caching::storage::Stored;
+
 
         #[derive(serde::Serialize, serde::Deserialize)]
         pub struct Metadata {
@@ -62,6 +70,12 @@ pub mod caches {
         impl Default for Metadata {
             fn default() -> Self {
                 Self::new()
+            }
+        }
+
+        impl Stored for Metadata {
+            fn is_obsolete(&self) -> bool {
+                self.paths.is_empty()
             }
         }
     }
