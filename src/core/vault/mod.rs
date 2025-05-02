@@ -6,6 +6,7 @@ use super::{
 use crate::{core::vault, semantic};
 
 pub mod caching;
+pub mod event;
 pub mod resource;
 pub mod volume;
 
