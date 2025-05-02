@@ -87,8 +87,6 @@ where
         let writer = std::io::BufWriter::new(file);
         serde_json::to_writer(writer, data).map_err(|_| ())?;
 
-        println!("Wrote data for key {}", key.as_string());
-
         Ok(())
     }
 

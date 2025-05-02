@@ -145,7 +145,6 @@ impl Resource {
             match cache.get_hash(&self.path) {
                 Some(hash) => return Some(hash.clone()),
                 None => {
-                    println!("Calculating hash for {:?}", self.path);
                     let content = self.read_to_bytes(resource_interface).ok()?;
                     let hash = crate::util::hashing::Sha256::hash_bytes(&content);
                     cache.set_hash(&self.path, hash.clone());
