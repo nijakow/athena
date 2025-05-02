@@ -89,21 +89,25 @@ where
         self.cached.get_mut(key).ok_or(())
     }
 
-    pub fn access<F, R>(&mut self, key: &Sha256, f: F) -> Result<R, ()>
+    pub fn access<K, F, R>(&mut self, key: K, f: F) -> Result<R, ()>
     where
+        K: Into<Sha256>,
         F: FnOnce(&T) -> R,
     {
-        let data = self.get(key)?;
+        let key = key.into();
+        let data = self.get(&key)?;
         Ok(f(data))
     }
 
-    pub fn modify<F>(&mut self, key: &Sha256, f: F) -> Result<(), ()>
+    pub fn modify<K, F>(&mut self, key: K, f: F) -> Result<(), ()>
     where
+        K: Into<Sha256>,
         F: FnOnce(&mut T),
     {
-        let mut data = self.read(key).map_err(|_| ())?;
+        let key = key.into();
+        let mut data = self.read(&key).map_err(|_| ())?;
         f(&mut data);
-        self.write(key, &data)
+        self.write(&key, &data)
     }
 
     pub fn flush_cache(&mut self) -> Result<(), ()> {

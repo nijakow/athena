@@ -67,7 +67,7 @@ impl GlobalCache {
     }
 
     fn report_hash(&mut self, hash: &hashing::Sha256, path: &std::path::Path) {
-        self.metadata.modify(hash, |metadata| {
+        self.metadata.modify(hash.clone(), |metadata| {
             metadata.add_path(path.to_path_buf());
         }).map_err(|_| {
             eprintln!("Failed to report hash for path: {:?}", path);
