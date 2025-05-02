@@ -126,6 +126,8 @@ pub fn generate_show_zettel(
         decorate_content_page(html! {
             h1 { (title) }
             a href=(format!("{}?action=edit", id.as_safe_uri())) { "Edit" }
+            " "
+            a href=(format!("{}", id.as_safe_download_uri())) { "Raw" }
             br;
             (generate_metadata_box(&zettel.header, &conversion_context))
             br;
