@@ -115,7 +115,7 @@ impl Vault {
     pub fn tick(&self) {
         self.volumes.tick();
         
-        if let Ok(cache) = self.cache.write() {
+        if let Ok(mut cache) = self.cache.write() {
             cache.save().ok();
         }
     }

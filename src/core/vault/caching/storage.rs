@@ -47,7 +47,7 @@ where
         }
     }
 
-    fn read(&mut self, key: &Sha256) -> Result<T, ()> {
+    fn read(&self, key: &Sha256) -> Result<T, ()> {
         let path = self.local_path_for_key(key);
 
         if path.exists() {
@@ -61,7 +61,7 @@ where
         }
     }
 
-    fn write(&mut self, key: &Sha256, data: &T) -> Result<(), ()> {
+    fn write(&self, key: &Sha256, data: &T) -> Result<(), ()> {
         let path = self.local_path_for_key(key);
 
         if let Some(parent) = path.parent() {
@@ -85,7 +85,16 @@ where
 
     fn get(&mut self, key: &Sha256) -> Result<&mut T, ()> {
         self.ensure_in_cache(key)?;
+        // TODO: Flush parts of the cache if it gets too large
         self.cached.get_mut(key).ok_or(())
+    }
+
+    pub fn access<F, R>(&mut self, key: &Sha256, f: F) -> Result<R, ()>
+    where
+        F: FnOnce(&T) -> R,
+    {
+        let data = self.get(key)?;
+        Ok(f(data))
     }
 
     pub fn modify<F>(&mut self, key: &Sha256, f: F) -> Result<(), ()>
@@ -98,6 +107,14 @@ where
     }
 
     pub fn flush_cache(&mut self) -> Result<(), ()> {
+        for (key, data) in self.cached.iter() {
+            self.write(key, data).map_err(|_| ())?;
+        }
+
+        Ok(())
+    }
+
+    pub fn flush_and_clear_cache(&mut self) -> Result<(), ()> {
         let pairs = self.cached.drain().collect::<Vec<_>>();
 
         for (key, data) in pairs {
@@ -113,7 +130,7 @@ where
     T: serde::Serialize + for<'de> serde::Deserialize<'de> + Default,
 {
     fn drop(&mut self) {
-        if let Err(_) = self.flush_cache() {
+        if let Err(_) = self.flush_and_clear_cache() {
             eprintln!("Failed to flush cache on drop");
         }
     }
