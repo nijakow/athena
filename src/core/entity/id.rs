@@ -1,8 +1,6 @@
-
-use crate::core::vault::{self, caching};
+use crate::core::vault::{self, caching, resource};
 
 use crate::util::hashing::Sha256;
-
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Id {
@@ -34,11 +32,31 @@ impl Id {
         }
     }
 
+    pub(crate) fn parse(string: &str) -> Result<(Id, Option<resource::Type>), ()> {
+        // Split into main part and extension (taking the last dot as the separator)
+
+        let (main_part, extension) = if let Some(pos) = string.rfind('.') {
+            (&string[..pos], Some(&string[pos + 1..]))
+        } else {
+            (string, None)
+        };
+
+        let parsed = Self::from_string(main_part);
+
+        match parsed {
+            Ok(id) => Ok((id, extension.and_then(resource::Type::from_extension))),
+            Err(_) => Err(()),
+        }
+    }
+
     pub(crate) fn with_id<S: ToString>(id: S) -> Result<Id, ()> {
         Id::from_string(id)
     }
 
-    pub(crate) fn for_resource(resource: &vault::resource::Resource, cache: &mut caching::GlobalCache) -> Id {
+    pub(crate) fn for_resource(
+        resource: &vault::resource::Resource,
+        cache: &mut caching::GlobalCache,
+    ) -> Id {
         if let Some(hash) = resource.content_hash(cache) {
             Id::from_sha256(hash.clone())
         } else {
