@@ -32,23 +32,6 @@ impl Id {
         }
     }
 
-    pub(crate) fn parse(string: &str) -> Result<(Id, Option<resource::Type>), ()> {
-        // Split into main part and extension (taking the last dot as the separator)
-
-        let (main_part, extension) = if let Some(pos) = string.rfind('.') {
-            (&string[..pos], Some(&string[pos + 1..]))
-        } else {
-            (string, None)
-        };
-
-        let parsed = Self::from_string(main_part);
-
-        match parsed {
-            Ok(id) => Ok((id, extension.and_then(resource::Type::from_extension))),
-            Err(_) => Err(()),
-        }
-    }
-
     pub(crate) fn with_id<S: ToString>(id: S) -> Result<Id, ()> {
         Id::from_string(id)
     }
@@ -120,5 +103,39 @@ impl<'de> serde::Deserialize<'de> for Id {
 impl Into<Sha256> for Id {
     fn into(self) -> Sha256 {
         self.as_hash()
+    }
+}
+
+
+pub struct TypedId(pub Id, pub Option<resource::Type>);
+
+impl TypedId {
+    pub fn new(id: Id, resource_type: Option<resource::Type>) -> Self {
+        Self(id, resource_type)
+    }
+
+    pub fn id(&self) -> &Id {
+        &self.0
+    }
+
+    pub fn resource_type(&self) -> Option<&resource::Type> {
+        self.1.as_ref()
+    }
+
+    pub fn parse(string: &str) -> Result<(Id, Option<resource::Type>), ()> {
+        // Split into main part and extension (taking the last dot as the separator)
+
+        let (main_part, extension) = if let Some(pos) = string.rfind('.') {
+            (&string[..pos], Some(&string[pos + 1..]))
+        } else {
+            (string, None)
+        };
+
+        let parsed = Id::from_string(main_part);
+
+        match parsed {
+            Ok(id) => Ok((id, extension.and_then(resource::Type::from_extension))),
+            Err(_) => Err(()),
+        }
     }
 }
