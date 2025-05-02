@@ -84,8 +84,8 @@ impl Vault {
     }
 
     pub fn title_of_entity(&self, id: &entity::Id) -> Option<String> {
-        let perhaps_title = match self.cache.read() {
-            Ok(cache) => cache.get_title(id).cloned(),
+        let perhaps_title = match self.cache.write() {
+            Ok(mut cache) => cache.get_title(id),
             Err(_) => None,
         };
 
