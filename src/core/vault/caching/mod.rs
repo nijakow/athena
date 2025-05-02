@@ -1,6 +1,9 @@
 use crate::{core::entity, util::hashing};
 
 
+pub mod storage;
+
+
 pub struct GlobalCache {
     hashes: std::collections::HashMap<std::path::PathBuf, hashing::Sha256>,
     titles: std::collections::HashMap<entity::Id, String>,
