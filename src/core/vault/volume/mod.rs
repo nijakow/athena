@@ -100,8 +100,10 @@ impl Volume {
     }
 
     pub fn list_resources(&self) -> impl Iterator<Item = resource::Resource> {
+        let volume_id = self.id.clone();
+
         self.list_files()
-            .map(|path| resource::Resource::from_path(path))
+            .map(move |path| resource::Resource::from_path(VolumePath::new(volume_id.clone(), path)))
     }
 
     pub fn map_resource_func<'a, T>(
@@ -145,7 +147,7 @@ impl Volume {
 
     fn resource_by_short_name(&self, name: &str) -> Option<resource::Resource> {
         self.file_by_short_name(name)
-            .map(|path| resource::Resource::from_path(path))
+            .map(|path| resource::Resource::from_path(VolumePath::new(self.id.clone(), path)))
     }
 
     pub fn resource_by_id(&self, id: &entity::Id, cache: &mut caching::GlobalCache) -> Option<resource::Resource> {

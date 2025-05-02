@@ -1,4 +1,4 @@
-use super::caching;
+use super::{caching, volume};
 
 
 pub mod file;
@@ -116,26 +116,22 @@ pub struct Metadata {
 
 #[derive(Debug)]
 pub struct Resource {
-    path: std::path::PathBuf,
+    path: volume::VolumePath,
 }
 
 impl Resource {
-    pub fn from_path(path: std::path::PathBuf) -> Self {
+    pub fn from_path(path: volume::VolumePath) -> Self {
         Self { path }
     }
 
-    pub fn from_path_ref(path: &std::path::Path) -> Self {
-        Self::from_path(path.to_path_buf())
-    }
-
     pub fn metadata(&self) -> Metadata {
-        let extension = self.path.extension().and_then(|e| e.to_str());
+        let extension = self.path.path().extension().and_then(|e| e.to_str());
         let resource_type = extension.and_then(|e| Type::from_extension(e));
 
         Metadata { resource_type }
     }
 
-    pub fn path(&self) -> &std::path::Path {
+    pub fn volume_path(&self) -> &volume::VolumePath {
         &self.path
     }
 
@@ -147,7 +143,7 @@ impl Resource {
                     println!("Calculating hash for {:?}", self.path);
                     let content = self.read_to_bytes().ok()?;
                     let hash = crate::util::hashing::Sha256::hash_bytes(&content);
-                    cache.set_hash(self.path.clone(), hash.clone());
+                    cache.set_hash(&self.path, hash.clone());
                     Some(hash)
                 }
             }
@@ -163,20 +159,25 @@ impl Resource {
     }
 
     pub fn open_for_reading(&self) -> Result<Box<dyn std::io::Read>, std::io::Error> {
-        std::fs::File::open(&self.path).map(|f| Box::new(f) as Box<dyn std::io::Read>)
+        // TODO, FIXME, XXX: Actually ask the volume! Don't ignore the volume ID!
+        std::fs::File::open(self.path.path()).map(|f| Box::new(f) as Box<dyn std::io::Read>)
     }
 
     pub fn read_to_bytes(&self) -> Result<Vec<u8>, std::io::Error> {
-        std::fs::read(&self.path)
+        // TODO, FIXME, XXX: Actually ask the volume! Don't ignore the volume ID!
+        std::fs::read(self.path.path())
     }
 
     pub fn read_to_string(&self) -> Result<String, std::io::Error> {
-        std::fs::read_to_string(&self.path)
+        // TODO, FIXME, XXX: Actually ask the volume! Don't ignore the volume ID!
+        std::fs::read_to_string(self.path.path())
     }
 
     pub fn read_content(&self) -> Result<file::FileContent, std::io::Error> {
+        // TODO, FIXME, XXX: Actually ask the volume! Don't ignore the volume ID!
         let title = self
             .path
+            .path()
             .file_stem()
             .and_then(|s| s.to_str())
             .map(|s| s.to_string());

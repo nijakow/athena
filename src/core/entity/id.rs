@@ -44,6 +44,7 @@ impl Id {
             Id::from_sha256(hash.clone())
         } else {
             let file_name_without_extension = resource
+                .volume_path()
                 .path()
                 .file_stem()
                 .unwrap()

@@ -1,5 +1,7 @@
 use crate::{core::entity, util::hashing};
 
+use super::volume;
+
 pub mod storage;
 
 fn convert_path_to_hash(path: &std::path::Path) -> hashing::Sha256 {
@@ -43,11 +45,11 @@ pub mod caches {
     }
 
     pub mod by_sha256 {
-        use crate::core::vault::caching::storage::Stored;
+        use crate::core::vault::{caching::storage::Stored, volume};
 
         #[derive(serde::Serialize, serde::Deserialize)]
         pub struct Metadata {
-            paths: std::collections::HashSet<std::path::PathBuf>,
+            paths: std::collections::HashSet<volume::VolumePath>,
         }
 
         impl Metadata {
@@ -57,11 +59,11 @@ pub mod caches {
                 }
             }
 
-            pub fn add_path(&mut self, path: std::path::PathBuf) {
+            pub fn add_path(&mut self, path: volume::VolumePath) {
                 self.paths.insert(path);
             }
 
-            pub fn paths(&self) -> impl std::iter::Iterator<Item = &std::path::PathBuf> {
+            pub fn paths(&self) -> impl std::iter::Iterator<Item = &volume::VolumePath> {
                 self.paths.iter()
             }
         }
@@ -135,19 +137,19 @@ impl GlobalCache {
         }
     }
 
-    pub fn get_hash(&mut self, path: &std::path::Path) -> Option<hashing::Sha256> {
+    pub fn get_hash(&mut self, path: &volume::VolumePath) -> Option<hashing::Sha256> {
         self.by_path
-            .access(convert_path_to_hash(path), |metadata| {
+            .access(path.as_hash(), |metadata| {
                 metadata.get_hash().cloned()
             })
             .ok()
             .flatten()
     }
 
-    fn report_hash(&mut self, hash: &hashing::Sha256, path: &std::path::Path) {
+    fn report_hash(&mut self, hash: &hashing::Sha256, path: &volume::VolumePath) {
         self.by_sha256
             .modify(hash.clone(), |metadata| {
-                metadata.add_path(path.to_path_buf());
+                metadata.add_path(path.clone());
             })
             .map_err(|_| {
                 eprintln!("Failed to report hash for path: {:?}", path);
@@ -155,9 +157,9 @@ impl GlobalCache {
             .ok();
     }
 
-    fn report_hash_2(&mut self, hash: &hashing::Sha256, path: &std::path::Path) {
+    fn report_hash_2(&mut self, hash: &hashing::Sha256, path: &volume::VolumePath) {
         self.by_path
-            .modify(convert_path_to_hash(path), |metadata| {
+            .modify(path.as_hash(), |metadata| {
                 metadata.set_hash(hash.clone());
             })
             .map_err(|_| {
@@ -166,7 +168,7 @@ impl GlobalCache {
             .ok();
     }
 
-    pub fn set_hash(&mut self, path: std::path::PathBuf, hash: hashing::Sha256) {
+    pub fn set_hash(&mut self, path: &volume::VolumePath, hash: hashing::Sha256) {
         self.report_hash(&hash, &path); // Tell the system in which file(s) the hash can be found
         self.report_hash_2(&hash, &path); // Tell the system the hash of the file
     }
