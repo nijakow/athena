@@ -1,11 +1,17 @@
 use crate::util::hashing::Sha256;
+use std::collections::HashMap;
+
+pub struct EntryInfo {
+    pub dirty: bool,
+}
 
 pub struct DataStorage<T>
 where
     T: serde::Serialize + for<'de> serde::Deserialize<'de> + Default,
 {
     base_path: std::path::PathBuf,
-    cached: std::collections::HashMap<Sha256, T>,
+    cached: HashMap<Sha256, T>,
+    entry_info: HashMap<Sha256, EntryInfo>, // New map to track entry info
 }
 
 impl<T> DataStorage<T>
@@ -24,7 +30,8 @@ where
         if check_preconditions(&base_path, create) {
             let storage = Self {
                 base_path,
-                cached: std::collections::HashMap::new(),
+                cached: HashMap::new(),
+                entry_info: HashMap::new(),
             };
             Ok(storage)
         } else {
@@ -72,6 +79,8 @@ where
         let writer = std::io::BufWriter::new(file);
         serde_json::to_writer(writer, data).map_err(|_| ())?;
 
+        println!("Wrote data for key {}", key.as_string());
+
         Ok(())
     }
 
@@ -107,12 +116,26 @@ where
         let key = key.into();
         let mut data = self.read(&key).map_err(|_| ())?;
         f(&mut data);
-        self.write(&key, &data)
+
+        // Mark the entry as dirty
+        self.entry_info
+            .entry(key.clone())
+            .or_insert_with(|| EntryInfo { dirty: false })
+            .dirty = true;
+
+        self.cached.insert(key, data);
+        Ok(())
     }
 
     pub fn flush_cache(&mut self) -> Result<(), ()> {
         for (key, data) in self.cached.iter() {
-            self.write(key, data).map_err(|_| ())?;
+            if let Some(info) = self.entry_info.get(key) {
+                if info.dirty {
+                    self.write(key, data).map_err(|_| ())?;
+                    // Mark the entry as clean
+                    self.entry_info.get_mut(key).unwrap().dirty = false;
+                }
+            }
         }
 
         Ok(())
@@ -122,8 +145,14 @@ where
         let pairs = self.cached.drain().collect::<Vec<_>>();
 
         for (key, data) in pairs {
-            self.write(&key, &data).map_err(|_| ())?;
+            if let Some(info) = self.entry_info.get(&key) {
+                if info.dirty {
+                    self.write(&key, &data).map_err(|_| ())?;
+                }
+            }
         }
+
+        self.entry_info.clear(); // Clear entry info
 
         Ok(())
     }
