@@ -16,7 +16,7 @@ impl Config {
     }
 
     pub fn cache_path(&self) -> std::path::PathBuf {
-        // Default is ~/.athena-cache
+        // Default is ~/.athena
         self.cache_path
             .clone()
             .unwrap_or_else(|| {
