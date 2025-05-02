@@ -184,18 +184,14 @@ impl Volume {
 }
 
 pub struct Volumes {
-    snapshot_path: std::path::PathBuf,
     vols: Vec<Volume>,
 }
 
 impl Volumes {
-    pub fn new(snapshot_path: std::path::PathBuf, vols: Vec<Volume>) -> Self {
-        let mut volumes = Volumes {
-            snapshot_path,
-            vols,
-        };
-
-        volumes
+    pub fn new(vols: Vec<Volume>) -> Self {
+        Self {
+            vols
+        }
     }
 
     pub fn volume_by_id(&self, id: &VolumeId) -> Option<&Volume> {

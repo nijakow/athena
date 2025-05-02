@@ -17,22 +17,29 @@ pub struct Vault {
 pub type VaultOpenResult = Result<Vault, ()>;
 
 impl Vault {
-    fn new(config: config::Config) -> Vault {
-        let snapshot_path = config.snapshot_path();
+    pub(crate) fn open(config: config::Config) -> VaultOpenResult {
+        let cache_path = config.cache_path();
+
+        // Try to create the cache directory if it doesn't exist
+        if !cache_path.exists() {
+            std::fs::create_dir_all(&cache_path)
+                .map_err(|_| {
+                    eprintln!("Unable to create cache directory at {:?}", cache_path);
+                    ()
+                })?;
+        }
 
         let volumes = vec![vault::volume::Volume::new(
             config.vault_path.unwrap(),
             vault::volume::flags::Flags::new().with_zettels(),
         )];
 
-        Vault {
-            volumes: vault::volume::Volumes::new(snapshot_path, volumes),
-            cache: std::sync::RwLock::new(caching::GlobalCache::new()),
-        }
-    }
+        let vault = Self {
+            volumes: vault::volume::Volumes::new(volumes),
+            cache: std::sync::RwLock::new(caching::GlobalCache::new(cache_path)),
+        };
 
-    pub(crate) fn open(config: config::Config) -> VaultOpenResult {
-        Ok(Self::new(config))
+        Ok(vault)
     }
 
     pub fn list_entities(&self) -> Vec<entity::Id> {
@@ -107,6 +114,10 @@ impl Vault {
 
     pub fn tick(&self) {
         self.volumes.tick();
+        
+        if let Ok(cache) = self.cache.write() {
+            cache.save().ok();
+        }
     }
 }
 

@@ -4,14 +4,23 @@ use crate::{core::entity, util::hashing};
 pub mod storage;
 
 
+#[derive(serde::Serialize, serde::Deserialize)]
+struct GlobalCacheSaveState {
+    hashes: std::collections::HashMap<std::path::PathBuf, hashing::Sha256>,
+    titles: std::collections::HashMap<entity::Id, String>,
+}
+
+
 pub struct GlobalCache {
+    base_path: std::path::PathBuf,
     hashes: std::collections::HashMap<std::path::PathBuf, hashing::Sha256>,
     titles: std::collections::HashMap<entity::Id, String>,
 }
 
 impl GlobalCache {
-    pub fn new() -> Self {
+    pub fn new(base_path: std::path::PathBuf) -> Self {
         Self {
+            base_path,
             hashes: std::collections::HashMap::new(),
             titles: std::collections::HashMap::new(),
         }
@@ -31,5 +40,21 @@ impl GlobalCache {
 
     pub fn set_title(&mut self, id: entity::Id, title: String) {
         self.titles.insert(id, title);
+    }
+
+    pub fn save(&self) -> Result<(), std::io::Error> {
+        let snapshot = GlobalCacheSaveState {
+            hashes: self.hashes.clone(),
+            titles: self.titles.clone(),
+        };
+
+        {
+            let path = self.base_path.join("cache.json");
+            let file = std::fs::File::create(&path)?;
+            let writer = std::io::BufWriter::new(file);
+            serde_json::to_writer(writer, &snapshot)?;
+        }
+        
+        Ok(())
     }
 }

@@ -3,25 +3,25 @@ use dirs;
 
 
 pub(crate) struct Config {
-    pub snapshot_path: Option<std::path::PathBuf>,
+    pub cache_path: Option<std::path::PathBuf>,
     pub vault_path: Option<std::path::PathBuf>,
 }
 
 impl Config {
     pub fn new() -> Self {
         Self {
-            snapshot_path: None,
+            cache_path: None,
             vault_path: None
         }
     }
 
-    pub fn snapshot_path(&self) -> std::path::PathBuf {
+    pub fn cache_path(&self) -> std::path::PathBuf {
         // Default is ~/.athena-cache
-        self.snapshot_path
+        self.cache_path
             .clone()
             .unwrap_or_else(|| {
                 let mut path = dirs::home_dir().expect("Unable to determine home directory");
-                path.push(".athena-cache");
+                path.push(".athena");
                 path
             })
     }
@@ -39,8 +39,8 @@ impl ConfigBuilder {
         }
     }
 
-    pub fn snapshot_path(mut self, path: std::path::PathBuf) -> Self {
-        self.config.snapshot_path = Some(path);
+    pub fn cache_path(mut self, path: std::path::PathBuf) -> Self {
+        self.config.cache_path = Some(path);
         self
     }
 
