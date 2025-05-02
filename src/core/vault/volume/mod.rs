@@ -102,8 +102,9 @@ impl Volume {
     pub fn list_resources(&self) -> impl Iterator<Item = resource::Resource> {
         let volume_id = self.id.clone();
 
-        self.list_files()
-            .map(move |path| resource::Resource::from_path(VolumePath::new(volume_id.clone(), path)))
+        self.list_files().map(move |path| {
+            resource::Resource::from_path(VolumePath::new(volume_id.clone(), path))
+        })
     }
 
     pub fn map_resource_func<'a, T>(
@@ -150,7 +151,12 @@ impl Volume {
             .map(|path| resource::Resource::from_path(VolumePath::new(self.id.clone(), path)))
     }
 
-    pub fn resource_by_id(&self, id: &entity::Id, resource_interface: &dyn resource::ResourceInterface, cache: &mut caching::GlobalCache) -> Option<resource::Resource> {
+    pub fn resource_by_id(
+        &self,
+        id: &entity::Id,
+        resource_interface: &dyn resource::ResourceInterface,
+        cache: &mut caching::GlobalCache,
+    ) -> Option<resource::Resource> {
         match id {
             entity::Id::Sha256(sha256) => {
                 for resource in self.list_resources() {
@@ -185,23 +191,34 @@ impl Volume {
     }
 }
 
+pub type VolumeArc = std::sync::Arc<Volume>;
+
+
 pub struct Volumes {
-    vols: Vec<Volume>,
+    vols: Vec<VolumeArc>,
 }
 
 impl Volumes {
     pub fn new(vols: Vec<Volume>) -> Self {
         Self {
-            vols
+            vols: vols.into_iter().map(|v| std::sync::Arc::new(v)).collect(),
         }
     }
 
     pub fn volume_by_id(&self, id: &VolumeId) -> Option<&Volume> {
-        self.vols.iter().find(|volume| volume.id() == id)
+        self.vols.iter().find_map(|volume| {
+            if volume.id() == id {
+                Some(volume.as_ref())
+            } else {
+                None
+            }
+        })
     }
 
     pub fn volume_by_id_mut(&mut self, id: &VolumeId) -> Option<&mut Volume> {
-        self.vols.iter_mut().find(|volume| volume.id() == id)
+        self.vols
+            .iter_mut()
+            .find_map(|volume| std::sync::Arc::get_mut(volume).filter(|v| v.id() == id))
     }
 
     pub fn list_resources<'a>(&'a self) -> impl Iterator<Item = resource::Resource> + 'a {
@@ -219,7 +236,12 @@ impl Volumes {
             .flat_map(move |storage| storage.map_resource_func(func.clone()))
     }
 
-    pub fn find_resource_for_id(&self, id: &entity::Id, resource_interface: &dyn resource::ResourceInterface, cache: &mut caching::GlobalCache) -> Option<resource::Resource> {
+    pub fn find_resource_for_id(
+        &self,
+        id: &entity::Id,
+        resource_interface: &dyn resource::ResourceInterface,
+        cache: &mut caching::GlobalCache,
+    ) -> Option<resource::Resource> {
         self.vols
             .iter()
             .filter_map(|storage| storage.resource_by_id(id, resource_interface, cache))
