@@ -6,22 +6,22 @@ pub mod storage;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct Metadata {
-    paths: Vec<std::path::PathBuf>,
+    paths: std::collections::HashSet<std::path::PathBuf>,
 }
 
 impl Metadata {
     pub fn new() -> Self {
         Self {
-            paths: Vec::new(),
+            paths: std::collections::HashSet::new(),
         }
     }
 
     pub fn add_path(&mut self, path: std::path::PathBuf) {
-        self.paths.push(path);
+        self.paths.insert(path);
     }
 
-    pub fn get_paths(&self) -> &Vec<std::path::PathBuf> {
-        &self.paths
+    pub fn paths(&self) -> impl std::iter::Iterator<Item = &std::path::PathBuf> {
+        self.paths.iter()
     }
 }
 
