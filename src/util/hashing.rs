@@ -1,4 +1,3 @@
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Sha256 {
     bytes: [u8; 32],
@@ -9,11 +8,11 @@ impl Sha256 {
         Self { bytes }
     }
 
-    pub(crate) fn from_string<S: ToString>(string: S) -> Self {
-        let bytes = hex::decode(string.to_string()).unwrap();
+    pub(crate) fn from_string<S: ToString>(string: S) -> Result<Self, ()> {
+        let bytes = hex::decode(string.to_string()).map_err(|_| ())?;
         let mut sha256_bytes = [0; 32];
         sha256_bytes.copy_from_slice(&bytes);
-        Sha256::new(sha256_bytes)
+        Ok(Sha256::new(sha256_bytes))
     }
 
     pub(crate) fn from_sha256_digest<D: sha2::Digest>(digest: D) -> Sha256 {
@@ -57,6 +56,6 @@ impl<'de> serde::Deserialize<'de> for Sha256 {
         D: serde::Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        Ok(Sha256::from_string(s))
+        Sha256::from_string(s).map_err(|_| serde::de::Error::custom("Invalid SHA256 string"))
     }
 }

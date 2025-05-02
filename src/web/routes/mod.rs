@@ -66,16 +66,16 @@ pub async fn download_entity(
     vault: web::Data<Arc<vault::Vault>>,
     id: web::Path<String>,
 ) -> HttpResponse {
-    let id = entity::Id::with_id(id.into_inner());
-
-    if let Some(resource) = vault.load_resource(&id) {
-        pages::generate_download_resource(resource)
-    } else {
-        pages::error::generate_http_error_response(
-            actix_web::http::StatusCode::NOT_IMPLEMENTED,
-            Some("Download for this type not implemented yet!".to_string()),
-        )
-    }
+    pages::generate_page_with_parsed_id(&id.into_inner(), |id| {
+        if let Some(resource) = vault.load_resource(&id) {
+            pages::generate_download_resource(resource)
+        } else {
+            pages::error::generate_http_error_response(
+                actix_web::http::StatusCode::NOT_IMPLEMENTED,
+                Some("Download for this type not implemented yet!".to_string()),
+            )
+        }
+    })
 }
 
 pub async fn post_entity(
@@ -83,22 +83,23 @@ pub async fn post_entity(
     id: web::Path<String>,
     body: web::Form<HashMap<String, String>>,
 ) -> HttpResponse {
-    let id = entity::Id::with_id(id.into_inner());
-    let content = body.get("content").unwrap();
+    pages::generate_page_with_parsed_id(&id.into_inner(), |id| {
+        let content = body.get("content").unwrap();
 
-    println!("Received content: {}", content);
+        println!("Received content: {}", content);
 
-    let zettel = vault.load_zettel(&id);
+        let zettel = vault.load_zettel(&id);
 
-    match zettel {
-        Some(_zettel) => {
-            println!("Zettel found, updating content");
+        match zettel {
+            Some(_zettel) => {
+                println!("Zettel found, updating content");
+            }
+            None => {
+                println!("Zettel not found");
+            }
         }
-        None => {
-            println!("Zettel not found");
-        }
-    }
 
-    // We are okay and we are returning the Zettel
-    pages::generate_show_entity(&vault, id)
+        // We are okay and we are returning the Zettel
+        pages::generate_show_entity(&vault, id)
+    })
 }

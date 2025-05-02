@@ -37,6 +37,20 @@ pub fn decorate_content_page(content: maud::PreEscaped<String>) -> maud::PreEsca
 
 
 
+pub fn generate_page_with_parsed_id<F>(id: &str, func: F) -> HttpResponse
+where
+    F: FnOnce(entity::Id) -> HttpResponse,
+{
+    match entity::Id::with_id(id) {
+        Ok(parsed_id) => func(parsed_id),
+        Err(_) => error::generate_http_error_response(
+            actix_web::http::StatusCode::BAD_REQUEST,
+            Some("Invalid ID format".to_string()),
+        ),
+    }
+}
+
+
 
 pub fn generate_download_resource(resource: vault::resource::Resource) -> HttpResponse {
     let mime = resource
@@ -102,7 +116,9 @@ pub async fn show_entity(
         .any(|accept| accept.to_string().to_lowercase().contains("text/html"));
 
     if accept_html {
-        generate_show_entity(&vault, entity::Id::with_id(id.into_inner()))
+        generate_page_with_parsed_id(&id.into_inner(), |id| {
+            generate_show_entity(&vault, id)
+        })
     } else {
         super::routes::download_entity(vault, id).await // TODO: Move this to us!
     }

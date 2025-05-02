@@ -19,22 +19,22 @@ impl Id {
         Id::Basic(string.to_string())
     }
 
-    pub(crate) fn from_string<S: ToString>(string: S) -> Id {
+    pub(crate) fn from_string<S: ToString>(string: S) -> Result<Id, ()> {
         let string = string.to_string();
 
         // If the string starts with "sha256-" then it's a SHA256 hash
 
         if string.starts_with("sha256-") {
             let sha256_string = string.trim_start_matches("sha256-");
-            let sha256 = Sha256::from_string(sha256_string);
+            let sha256 = Sha256::from_string(sha256_string)?;
 
-            Id::Sha256(sha256)
+            Ok(Id::Sha256(sha256))
         } else {
-            Id::Basic(string)
+            Ok(Id::Basic(string))
         }
     }
 
-    pub(crate) fn with_id<S: ToString>(id: S) -> Id {
+    pub(crate) fn with_id<S: ToString>(id: S) -> Result<Id, ()> {
         Id::from_string(id)
     }
 
@@ -76,7 +76,7 @@ impl Id {
     }
 
     pub fn as_hash(&self) -> Sha256 {
-        Sha256::from_string(self.id())
+        Sha256::hash_string(self.id())
     }
 }
 
@@ -94,7 +94,8 @@ impl serde::Serialize for Id {
 impl<'de> serde::Deserialize<'de> for Id {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let id = String::deserialize(deserializer)?;
-        Ok(Id::from_string(id))
+        let id = Id::from_string(id).map_err(|_| serde::de::Error::custom("Invalid ID format"))?;
+        Ok(id)
     }
 }
 

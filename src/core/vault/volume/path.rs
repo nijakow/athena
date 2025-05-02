@@ -41,7 +41,7 @@ impl<'de> serde::Deserialize<'de> for VolumePath {
         }
         let volume = parts[0].to_string();
         let path = std::path::PathBuf::from(parts[1]);
-        let volume_id = VolumeId::from_string(volume);
+        let volume_id = VolumeId::from_string(volume).map_err(|_| serde::de::Error::custom("Invalid volume ID format"))?;
         Ok(Self::new(volume_id, path))
     }
 }

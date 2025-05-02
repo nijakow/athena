@@ -140,28 +140,29 @@ pub async fn edit_zettel(
     vault: web::Data<Arc<vault::Vault>>,
     id: web::Path<String>,
 ) -> HttpResponse {
-    let id = entity::Id::with_id(id.into_inner());
-    let zettel = vault.load_zettel(&id);
+    pages::generate_page_with_parsed_id(&id.into_inner(), |id| {
+        let zettel = vault.load_zettel(&id);
 
-    let vault_ref = vault.get_ref();
+        let vault_ref = vault.get_ref();
 
-    let conversion_context =
-        zettel::document::conversions::html::HtmlConversionContext::new(Arc::clone(vault_ref));
+        let conversion_context =
+            zettel::document::conversions::html::HtmlConversionContext::new(Arc::clone(vault_ref));
 
-    let html = pages::decorate_maud_html(
-        "Zettel",
-        html! {
-            h1 { "Zettel" }
-            form action=(format!("{}", id.as_safe_uri())) method="post" {
-                textarea name="content" {
-                    @if let Some(zettel) = zettel {
-                        (zettel.body_as_document().unwrap().as_html(&conversion_context))
+        let html = pages::decorate_maud_html(
+            "Zettel",
+            html! {
+                h1 { "Zettel" }
+                form action=(format!("{}", id.as_safe_uri())) method="post" {
+                    textarea name="content" {
+                        @if let Some(zettel) = zettel {
+                            (zettel.body_as_document().unwrap().as_html(&conversion_context))
+                        }
                     }
+                    button type="submit" { "Save" }
                 }
-                button type="submit" { "Save" }
-            }
-        },
-    );
+            },
+        );
 
-    HttpResponse::Ok().body(html.into_string())
+        HttpResponse::Ok().body(html.into_string())
+    })
 }

@@ -27,7 +27,7 @@ fn convert_node(node: &markdown::Node) -> Result<document::node::Node, Conversio
 
             let result = match target {
                 markdown::LinkTarget::Zettel(zettel) => Some(document::node::Node::Reference(document::node::reference::Reference {
-                    target: document::node::reference::ReferenceTarget::Entity(entity::Id::from_string(zettel)),
+                    target: document::node::reference::ReferenceTarget::Entity(entity::Id::from_string(zettel)?),
                     caption: match &link.title {
                         Some(title) => convert_nodes(&title)?,
                         None => vec![document::node::Node::Text(zettel.clone())],
