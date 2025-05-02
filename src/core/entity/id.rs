@@ -74,6 +74,10 @@ impl Id {
     pub fn as_safe_download_uri(&self) -> String {
         format!("/raw/{}", self.id())
     }
+
+    pub fn as_hash(&self) -> Sha256 {
+        Sha256::from_string(self.id())
+    }
 }
 
 impl serde::Serialize for Id {
@@ -91,5 +95,11 @@ impl<'de> serde::Deserialize<'de> for Id {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let id = String::deserialize(deserializer)?;
         Ok(Id::from_string(id))
+    }
+}
+
+impl Into<Sha256> for Id {
+    fn into(self) -> Sha256 {
+        self.as_hash()
     }
 }
