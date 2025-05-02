@@ -110,6 +110,11 @@ impl Type {
 }
 
 
+pub trait ResourceInterface {
+    fn open_for_reading(&self, path: &volume::VolumePath) -> Result<Box<dyn std::io::Read>, std::io::Error>;
+}
+
+
 pub struct Metadata {
     pub resource_type: Option<Type>,
 }
@@ -135,13 +140,13 @@ impl Resource {
         &self.path
     }
 
-    pub fn content_hash(&self, cache: &mut caching::GlobalCache) -> Option<crate::util::hashing::Sha256> {
+    pub fn content_hash(&self, resource_interface: &dyn ResourceInterface, cache: &mut caching::GlobalCache) -> Option<crate::util::hashing::Sha256> {
         if self.is_usually_hash_addressable() {
             match cache.get_hash(&self.path) {
                 Some(hash) => return Some(hash.clone()),
                 None => {
                     println!("Calculating hash for {:?}", self.path);
-                    let content = self.read_to_bytes().ok()?;
+                    let content = self.read_to_bytes(resource_interface).ok()?;
                     let hash = crate::util::hashing::Sha256::hash_bytes(&content);
                     cache.set_hash(&self.path, hash.clone());
                     Some(hash)
@@ -158,22 +163,30 @@ impl Resource {
             .map_or(false, |t| t.is_usually_immutable())
     }
 
-    pub fn open_for_reading(&self) -> Result<Box<dyn std::io::Read>, std::io::Error> {
+    pub fn open_for_reading(&self, resource_interface: &dyn ResourceInterface) -> Result<Box<dyn std::io::Read>, std::io::Error> {
         // TODO, FIXME, XXX: Actually ask the volume! Don't ignore the volume ID!
-        std::fs::File::open(self.path.path()).map(|f| Box::new(f) as Box<dyn std::io::Read>)
+        resource_interface.open_for_reading(&self.path)
     }
 
-    pub fn read_to_bytes(&self) -> Result<Vec<u8>, std::io::Error> {
-        // TODO, FIXME, XXX: Actually ask the volume! Don't ignore the volume ID!
-        std::fs::read(self.path.path())
+    pub fn read_to_bytes(&self, resource_interface: &dyn ResourceInterface) -> Result<Vec<u8>, std::io::Error> {
+        self.open_for_reading(resource_interface)
+            .and_then(|mut reader| {
+                let mut buffer = Vec::new();
+                reader.read_to_end(&mut buffer)?;
+                Ok(buffer)
+            })
     }
 
-    pub fn read_to_string(&self) -> Result<String, std::io::Error> {
-        // TODO, FIXME, XXX: Actually ask the volume! Don't ignore the volume ID!
-        std::fs::read_to_string(self.path.path())
+    pub fn read_to_string(&self, resource_interface: &dyn ResourceInterface) -> Result<String, std::io::Error> {
+        self.open_for_reading(resource_interface)
+            .and_then(|mut reader| {
+                let mut buffer = String::new();
+                reader.read_to_string(&mut buffer)?;
+                Ok(buffer)
+            })
     }
 
-    pub fn read_content(&self) -> Result<file::FileContent, std::io::Error> {
+    pub fn read_content(&self, resource_interface: &dyn ResourceInterface) -> Result<file::FileContent, std::io::Error> {
         // TODO, FIXME, XXX: Actually ask the volume! Don't ignore the volume ID!
         let title = self
             .path
@@ -181,15 +194,15 @@ impl Resource {
             .file_stem()
             .and_then(|s| s.to_str())
             .map(|s| s.to_string());
-        let content = self.read_to_bytes()?;
+        let content = self.read_to_bytes(resource_interface)?;
         let file_type = self.metadata().resource_type.unwrap_or(Type::Unknown);
 
         Ok(file::FileContent::new(file_type, title, content))
     }
 
-    pub fn parse<T, E>(&self, parser_func: fn(file::FileContent) -> Result<T, E>) -> Result<T, ParseError<E>>
+    pub fn parse<T, E>(&self, parser_func: fn(file::FileContent) -> Result<T, E>, resource_interface: &dyn ResourceInterface) -> Result<T, ParseError<E>>
     {
-        let content = self.read_content().map_err(|e| ParseError::Io(e))?;
+        let content = self.read_content(resource_interface).map_err(|e| ParseError::Io(e))?;
         parser_func(content).map_err(|e| ParseError::Parse(e))
     }
 }

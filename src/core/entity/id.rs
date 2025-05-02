@@ -38,9 +38,10 @@ impl Id {
 
     pub(crate) fn for_resource(
         resource: &vault::resource::Resource,
+        resource_interface: &dyn resource::ResourceInterface,
         cache: &mut caching::GlobalCache,
     ) -> Id {
-        if let Some(hash) = resource.content_hash(cache) {
+        if let Some(hash) = resource.content_hash(resource_interface, cache) {
             Id::from_sha256(hash.clone())
         } else {
             let file_name_without_extension = resource

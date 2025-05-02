@@ -150,11 +150,11 @@ impl Volume {
             .map(|path| resource::Resource::from_path(VolumePath::new(self.id.clone(), path)))
     }
 
-    pub fn resource_by_id(&self, id: &entity::Id, cache: &mut caching::GlobalCache) -> Option<resource::Resource> {
+    pub fn resource_by_id(&self, id: &entity::Id, resource_interface: &dyn resource::ResourceInterface, cache: &mut caching::GlobalCache) -> Option<resource::Resource> {
         match id {
             entity::Id::Sha256(sha256) => {
                 for resource in self.list_resources() {
-                    if let Some(hash) = resource.content_hash(cache) {
+                    if let Some(hash) = resource.content_hash(resource_interface, cache) {
                         if hash == *sha256 {
                             return Some(resource);
                         }
@@ -219,10 +219,10 @@ impl Volumes {
             .flat_map(move |storage| storage.map_resource_func(func.clone()))
     }
 
-    pub fn find_resource_for_id(&self, id: &entity::Id, cache: &mut caching::GlobalCache) -> Option<resource::Resource> {
+    pub fn find_resource_for_id(&self, id: &entity::Id, resource_interface: &dyn resource::ResourceInterface, cache: &mut caching::GlobalCache) -> Option<resource::Resource> {
         self.vols
             .iter()
-            .filter_map(|storage| storage.resource_by_id(id, cache))
+            .filter_map(|storage| storage.resource_by_id(id, resource_interface, cache))
             .next()
     }
 

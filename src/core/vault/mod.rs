@@ -48,7 +48,7 @@ impl Vault {
             Ok(mut cache) => self
                 .volumes
                 .list_resources()
-                .map(move |resource| entity::Id::for_resource(&resource, &mut cache))
+                .map(move |resource| entity::Id::for_resource(&resource, self, &mut cache))
                 .collect::<Vec<_>>(),
             Err(_) => vec![],
         }
@@ -56,7 +56,7 @@ impl Vault {
 
     fn find_resource_for_id(&self, id: &entity::Id) -> Option<vault::resource::Resource> {
         match self.cache.write() {
-            Ok(mut cache) => self.volumes.find_resource_for_id(id, &mut cache),
+            Ok(mut cache) => self.volumes.find_resource_for_id(id, self, &mut cache),
             Err(_) => None,
         }
     }
@@ -65,10 +65,14 @@ impl Vault {
         self.find_resource_for_id(id)
     }
 
+    pub fn resource_interface(&self) -> &dyn vault::resource::ResourceInterface {
+        self
+    }
+
     pub fn load_entity(&self, id: &entity::Id) -> Option<entity::Entity> {
         let resource = self.find_resource_for_id(id)?;
 
-        entity::Entity::from_resource(resource).ok()
+        entity::Entity::from_resource(resource, self).ok()
     }
 
     pub fn load_zettel(&self, id: &entity::Id) -> Option<zettel::Zettel> {
@@ -119,6 +123,12 @@ impl Vault {
         if let Ok(mut cache) = self.cache.write() {
             cache.save().ok();
         }
+    }
+}
+
+impl resource::ResourceInterface for Vault {
+    fn open_for_reading(&self, path: &volume::VolumePath) -> Result<Box<dyn std::io::Read>, std::io::Error> {
+        std::fs::File::open(path.path()).map(|f| Box::new(f) as Box<dyn std::io::Read>)
     }
 }
 

@@ -14,12 +14,12 @@ pub enum Entity {
 }
 
 impl Entity {
-    pub fn from_resource(resource: vault::resource::Resource) -> Result<Self, ()> {
+    pub fn from_resource(resource: vault::resource::Resource, resource_interface: &dyn vault::resource::ResourceInterface) -> Result<Self, ()> {
         let metadata = resource.metadata();
 
         match metadata.resource_type {
             Some(vault::resource::Type::Zettel(vault::resource::types::ZettelType::Obsidian)) => {
-                match resource.parse(crate::formats::markdown::parse_obsidian_markdown) {
+                match resource.parse(crate::formats::markdown::parse_obsidian_markdown, resource_interface) {
                     Ok(document) => {
                         let zettel = zettel::Zettel::from_obsidian_markdown(document)?;
                         Ok(Entity::Zettel(zettel))
@@ -29,7 +29,7 @@ impl Entity {
             }
             Some(_) => {
                 // TODO: Check file size and decide if it's too big to read into memory
-                resource.read_content().map(|content| Entity::File(content)).map_err(|_| ())
+                resource.read_content(resource_interface).map(|content| Entity::File(content)).map_err(|_| ())
             }
             None => Err(()),
         }

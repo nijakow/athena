@@ -52,13 +52,13 @@ where
 
 
 
-pub fn generate_download_resource(resource: vault::resource::Resource) -> HttpResponse {
+pub fn generate_download_resource(resource: vault::resource::Resource, resource_interface: &dyn vault::resource::ResourceInterface) -> HttpResponse {
     let mime = resource
         .metadata()
         .resource_type
         .map(|rt| rt.mime_type())
         .unwrap_or_else(|| "application/octet-stream");
-    let content = resource.read_to_bytes().unwrap();
+    let content = resource.read_to_bytes(resource_interface).unwrap();
 
     let mime = if mime == "text/plain" || mime == "text/markdown" {
         format!("text/plain; charset=utf-8")

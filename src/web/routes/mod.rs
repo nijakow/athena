@@ -68,7 +68,7 @@ pub async fn download_entity(
 ) -> HttpResponse {
     pages::generate_page_with_parsed_id(&id.into_inner(), |id| {
         if let Some(resource) = vault.load_resource(&id) {
-            pages::generate_download_resource(resource)
+            pages::generate_download_resource(resource, vault.resource_interface())
         } else {
             pages::error::generate_http_error_response(
                 actix_web::http::StatusCode::NOT_IMPLEMENTED,
