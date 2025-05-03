@@ -19,7 +19,7 @@ impl Element {
     pub fn parse_string(text: &str) -> Self {
         fn try_parse_entity_reference(text: &str) -> Option<Reference> {
             if text.starts_with("[[") {
-                let end = text.find("]]").unwrap_or_else(|| text.find('|').unwrap_or(text.len()));
+                let end = text.find("|").unwrap_or_else(|| text.find("]]").unwrap_or(text.len()));
                 let reference = &text[2..end];
                 let id = entity::Id::from_string(reference).ok()?;
                 Some(Reference::Entity(id))
@@ -36,7 +36,7 @@ impl Element {
                         let id = entity::Id::from_string(url.path()).ok()?;
                         Some(Reference::Entity(id))
                     } else {
-                        None
+                        Some(Reference::Url(url))
                     }
                 })
         }
@@ -44,7 +44,7 @@ impl Element {
         fn try_parse_time(text: &str) -> Option<Time> {
             if let Ok(date) = chrono::NaiveDate::parse_from_str(text, "%Y-%m-%d") {
                 Some(Time::Date(date))
-            } else if let Ok(datetime) = chrono::NaiveDateTime::parse_from_str(text, "%Y-%m-%d %H:%M:%S") {
+            } else if let Ok(datetime) = chrono::NaiveDateTime::parse_from_str(text, "%Y-%m-%d %H:%M") {
                 Some(Time::DateTime(datetime))
             } else {
                 None
@@ -64,7 +64,7 @@ impl Element {
 
     pub fn from_yaml(yaml: &yaml_rust2::Yaml) -> Option<Self> {
         match yaml {
-            yaml_rust2::Yaml::String(s) => Some(Element::String(s.clone())),
+            yaml_rust2::Yaml::String(s) => Some(Self::parse_string(s)),
             yaml_rust2::Yaml::Boolean(b) => Some(Element::Boolean(*b)),
             _ => None,
         }
@@ -72,6 +72,7 @@ impl Element {
 }
 
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Line {
     Single(Element),
     Multi(Vec<Element>),
@@ -102,6 +103,19 @@ impl Header {
 
     pub fn from_yaml(yaml: yaml_rust2::Yaml) -> Self {
         let title = yaml["title"].as_str().map(|s| s.to_string());
+
+        match &yaml {
+            yaml_rust2::Yaml::Hash(hash) => {
+                let lines = hash.iter().filter_map(|(k, v)| {
+                    let key = k.as_str()?;
+                    let value = Line::from_yaml(v)?;
+                    Some((key.to_string(), value))
+                }).collect::<Vec<_>>();
+
+                println!("Parsed lines: {:#?}", lines);
+            }
+            _ => {}
+        }
 
         Self {
             title,
