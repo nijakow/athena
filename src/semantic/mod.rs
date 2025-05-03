@@ -1,4 +1,4 @@
-use crate::core::entity::zettel::document::node::reference::ReferenceTarget;
+use crate::core::entity::link::reference::Reference;
 
 
 pub mod knowledge;
@@ -8,7 +8,7 @@ pub mod knowledge;
 pub enum InfoItem {
     Task,
     Tag(String),
-    Link(ReferenceTarget),
+    Link(Reference),
 }
 
 

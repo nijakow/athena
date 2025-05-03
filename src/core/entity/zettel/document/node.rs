@@ -12,18 +12,12 @@ pub enum Style {
 }
 
 pub mod reference {
-    use crate::core::entity;
+    use crate::core::entity::link::reference;
     use super::Nodes;
 
     #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-    pub enum ReferenceTarget {
-        Entity(entity::Id),
-        Url(url::Url),
-    }
-
-    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct Reference {
-        pub target: ReferenceTarget,
+        pub target: reference::Reference,
         pub caption: Nodes,
         pub embed: bool,
     }

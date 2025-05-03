@@ -3,6 +3,7 @@ use crate::core::vault;
 
 
 pub mod id;
+pub mod link;
 
 pub mod zettel;
 

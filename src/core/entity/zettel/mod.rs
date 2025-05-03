@@ -1,54 +1,10 @@
 use crate::semantic;
 
-
 pub mod document;
+pub mod parts;
 
-pub struct Header {
-    pub title: Option<String>,
-    pub yaml: Option<yaml_rust2::Yaml>,
-}
-
-impl Header {
-    fn new(title: Option<String>) -> Self {
-        Self {
-            title,
-            yaml: None,
-        }
-    }
-
-    fn from_yaml(yaml: yaml_rust2::Yaml) -> Self {
-        Self {
-            title: yaml["title"].as_str().map(|s| s.to_string()),
-            yaml: Some(yaml.clone()),
-        }
-    }
-}
-
-impl Default for Header {
-    fn default() -> Self {
-        Self::new(None)
-    }
-}
-
-
-pub enum Body {
-    Empty,
-    Document(Box<document::Document>),
-}
-
-impl Body {
-
-    pub(crate) fn from_obsidian_markdown(markdown: &crate::formats::markdown::Document) -> Result<Body, ()> {
-        Ok(Body::Document(Box::new(document::conversions::markdown::markdown_to_document(&markdown)?)))
-    }
-
-    pub fn as_document(&self) -> Option<&document::Document> {
-        match self {
-            Body::Document(doc) => Some(doc),
-            _ => None,
-        }
-    }
-}
+pub use parts::header::Header;
+pub use parts::body::Body;
 
 
 pub struct Zettel {

@@ -1,5 +1,5 @@
 use crate::core::{
-    entity::{self, zettel::document},
+    entity::{self, link, zettel::document},
     vault,
 };
 
@@ -63,7 +63,7 @@ impl AsHtml for document::node::Node {
                 let caption = &link.caption;
 
                 match target {
-                    document::node::reference::ReferenceTarget::Entity(target_id) => {
+                    link::reference::Reference::Entity(target_id) => {
                         if link.embed {
                             context.generate_embed(target_id).into_string()
                         } else {
@@ -78,7 +78,7 @@ impl AsHtml for document::node::Node {
                             )
                         }
                     }
-                    document::node::reference::ReferenceTarget::Url(url) => {
+                    link::reference::Reference::Url(url) => {
                         let caption = caption
                             .iter()
                             .map(|node| node.as_html(context))

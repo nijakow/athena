@@ -1,4 +1,4 @@
-use crate::core::entity;
+use crate::core::entity::{self, link};
 use crate::core::entity::zettel::document;
 use crate::formats::markdown;
 
@@ -27,7 +27,7 @@ fn convert_node(node: &markdown::Node) -> Result<document::node::Node, Conversio
 
             let result = match target {
                 markdown::LinkTarget::Zettel(zettel) => Some(document::node::Node::Reference(document::node::reference::Reference {
-                    target: document::node::reference::ReferenceTarget::Entity(entity::Id::from_string(zettel)?),
+                    target: link::reference::Reference::Entity(entity::Id::from_string(zettel)?),
                     caption: match &link.title {
                         Some(title) => convert_nodes(&title)?,
                         None => vec![document::node::Node::Text(zettel.clone())],
@@ -35,7 +35,7 @@ fn convert_node(node: &markdown::Node) -> Result<document::node::Node, Conversio
                     embed: *embed,
                 })),
                 markdown::LinkTarget::Url(url) => Some(document::node::Node::Reference(document::node::reference::Reference {
-                    target: document::node::reference::ReferenceTarget::Url(url.clone()),
+                    target: link::reference::Reference::Url(url.clone()),
                     caption: match &link.title {
                         Some(title) => convert_nodes(&title)?,
                         None => vec![document::node::Node::Text(url.to_string())],
