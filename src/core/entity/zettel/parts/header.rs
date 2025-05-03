@@ -12,6 +12,7 @@ pub enum Time {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Element {
     String(String),
+    Tag(String),
     Reference(Reference),
     Time(Time),
     Boolean(bool),
@@ -19,6 +20,15 @@ pub enum Element {
 
 impl Element {
     pub fn parse_string(text: &str) -> Self {
+        fn try_parse_tag(text: &str) -> Option<String> {
+            if text.starts_with("#") {
+                let tag = text[1..].to_string();
+                Some(tag)
+            } else {
+                None
+            }
+        }
+
         fn try_parse_entity_reference(text: &str) -> Option<Reference> {
             if text.starts_with("[[") {
                 let end = text
@@ -55,7 +65,9 @@ impl Element {
             }
         }
 
-        if let Some(reference) = try_parse_entity_reference(text) {
+        if let Some(tag) = try_parse_tag(text) {
+            Element::Tag(tag)
+        } else if let Some(reference) = try_parse_entity_reference(text) {
             Element::Reference(reference)
         } else if let Some(reference) = try_parse_url_reference(text) {
             Element::Reference(reference)
@@ -78,6 +90,9 @@ impl Element {
 impl semantic::Scannable for Element {
     fn iterate_info_items<F: FnMut(semantic::InfoItem)>(&self, func: &mut F) {
         match self {
+            Element::Tag(tag) => {
+                func(semantic::InfoItem::Tag(tag.clone()));
+            }
             Element::Reference(reference) => {
                 func(semantic::InfoItem::Link(reference.clone()));
             }
