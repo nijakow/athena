@@ -50,9 +50,7 @@ impl Zettel {
 impl semantic::Scannable for Zettel {
 
     fn iterate_info_items<F: FnMut(semantic::InfoItem)>(&self, func: &mut F) {
-        match &self.body {
-            Body::Document(doc) => doc.iterate_info_items(func),
-            _ => {}
-        }
+        self.header.iterate_info_items(func);
+        self.body.iterate_info_items(func);
     }
 }

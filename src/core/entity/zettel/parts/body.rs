@@ -1,5 +1,5 @@
 
-use crate::core::entity::zettel::document;
+use crate::{core::entity::zettel::document, semantic};
 
 
 pub enum Body {
@@ -17,6 +17,15 @@ impl Body {
         match self {
             Body::Document(doc) => Some(doc),
             _ => None,
+        }
+    }
+}
+
+impl semantic::Scannable for Body {
+    fn iterate_info_items<F: FnMut(semantic::InfoItem)>(&self, func: &mut F) {
+        match self {
+            Body::Document(doc) => doc.iterate_info_items(func),
+            _ => {}
         }
     }
 }

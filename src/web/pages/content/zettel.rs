@@ -7,7 +7,7 @@ use crate::{
     core::{
         entity::{
             self,
-            zettel::{self, document::conversions::html::{self, AsHtml, HtmlConversionContext}},
+            zettel::{self, document::conversions::html::{AsHtml, HtmlConversionContext}},
         },
         vault,
     },

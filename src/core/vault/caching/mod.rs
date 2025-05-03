@@ -4,10 +4,6 @@ use super::volume;
 
 pub mod storage;
 
-fn convert_path_to_hash(path: &std::path::Path) -> hashing::Sha256 {
-    hashing::Sha256::hash_string(path.to_string_lossy().as_ref())
-}
-
 pub mod caches {
     pub mod by_path {
         use crate::{core::vault::caching::storage::Stored, util::hashing};

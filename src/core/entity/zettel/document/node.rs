@@ -37,7 +37,7 @@ pub enum Node {
 impl semantic::Scannable for Node {
     fn iterate_info_items<F: FnMut(semantic::InfoItem)>(&self, func: &mut F) {
         match self {
-            Node::Text(text) => {}
+            Node::Text(_text) => {}
             Node::Tag(tag) => {
                 func(semantic::InfoItem::Tag(tag.clone()));
             }

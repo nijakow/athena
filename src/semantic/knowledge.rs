@@ -1,11 +1,11 @@
 
 #[derive(Debug, Clone)]
 pub struct UniversityCourseId {
-    id: String,
+    _id: String,
 }
 
 impl UniversityCourseId {
     pub fn new(id: String) -> Self {
-        UniversityCourseId { id }
+        UniversityCourseId { _id: id }
     }
 }

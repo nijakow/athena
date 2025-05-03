@@ -1,4 +1,3 @@
-use std::result;
 
 use crate::formats::markdown;
 
@@ -39,13 +38,6 @@ fn count_leading_chars(s: &str, c: char) -> usize {
     s.chars().take_while(|&x| x == c).count()
 }
 
-fn split_string_at_optional_pipe(s: &str) -> (&str, Option<&str>) {
-    let mut split = s.splitn(2, '|');
-    let first = split.next().unwrap();
-    let second = split.next();
-    (first, second)
-}
-
 fn split_task_string(s: &str) -> (Option<markdown::TaskStatus>, String) {
     // Check for index 0 and 2 being [ and ] respectively
 
@@ -68,26 +60,6 @@ pub enum PreParsed {
     Unparsed(Box<Vec<String>>),
 }
 
-struct ParseLink {
-    current: Box<Node>,
-    next: Option<Box<ParseLink>>,
-}
-
-impl ParseLink {
-    fn first(node: Node) -> ParseLink {
-        ParseLink {
-            current: Box::new(node),
-            next: None,
-        }
-    }
-
-    fn adjoin(node: Node, next: ParseLink) -> ParseLink {
-        ParseLink {
-            current: Box::new(node),
-            next: Some(Box::new(next)),
-        }
-    }
-}
 
 #[derive(Copy, Clone, Debug)]
 struct ParagraphFlags {
@@ -222,7 +194,7 @@ impl ParagraphParser {
         )
     }
 
-    fn parse_tag(&self, index: usize, flags: ParagraphFlags) -> Option<ParseReturn> {
+    fn parse_tag(&self, index: usize, _flags: ParagraphFlags) -> Option<ParseReturn> {
         let mut current = String::new();
         let mut i = index;
 
