@@ -13,7 +13,7 @@ pub type VolumePath = path::VolumePath;
 
 pub trait Volume {
     fn id(&self) -> &VolumeId;
-    fn list_resources<'a>(&'a self) -> impl Iterator<Item = resource::Resource> + 'a;
+    fn list_resources<'a>(&'a self) -> Box<dyn Iterator<Item = resource::Resource> + 'a>;
 
     fn map_resource_func<'a, T>(
         &'a self,
@@ -39,18 +39,21 @@ pub trait Volume {
 
 pub enum VolumeEnum {
     Directory(volumes::directory::DirectoryVolume),
+    Email(volumes::email::EmailVolume),
 }
 
 impl Volume for VolumeEnum {
     fn id(&self) -> &VolumeId {
         match self {
             VolumeEnum::Directory(v) => v.id(),
+            VolumeEnum::Email(v) => v.id(),
         }
     }
 
-    fn list_resources<'a>(&'a self) -> impl Iterator<Item = resource::Resource> + 'a {
+    fn list_resources<'a>(&'a self) -> Box<dyn Iterator<Item = resource::Resource> + 'a> {
         match self {
-            VolumeEnum::Directory(v) => v.list_resources(),
+            VolumeEnum::Directory(v) => Box::new(v.list_resources()),
+            VolumeEnum::Email(v) => Box::new(v.list_resources()),
         }
     }
 
@@ -62,24 +65,28 @@ impl Volume for VolumeEnum {
     ) -> Option<resource::Resource> {
         match self {
             VolumeEnum::Directory(v) => v.resource_by_id(id, resource_interface, cache),
+            VolumeEnum::Email(v) => v.resource_by_id(id, resource_interface, cache),
         }
     }
 
     fn tick(&self) {
         match self {
             VolumeEnum::Directory(v) => v.tick(),
+            VolumeEnum::Email(v) => v.tick(),
         }
     }
 
     fn find_directory(&self, purpose: info::DirectoryPurpose) -> Option<std::path::PathBuf> {
         match self {
             VolumeEnum::Directory(v) => v.find_directory(purpose),
+            VolumeEnum::Email(v) => v.find_directory(purpose),
         }
     }
 
     fn open_path(&self, path: &VolumePath) -> Result<Box<dyn std::io::Read>, std::io::Error> {
         match self {
             VolumeEnum::Directory(v) => v.open_path(path),
+            VolumeEnum::Email(v) => v.open_path(path),
         }
     }
 }

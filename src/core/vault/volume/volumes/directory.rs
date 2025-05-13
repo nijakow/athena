@@ -1,7 +1,9 @@
-use crate::core::{entity, vault::{caching, resource, volume::VolumeEnum}};
+use crate::core::{
+    entity,
+    vault::{caching, resource, volume::VolumeEnum},
+};
 
 use super::super::{flags, info, path, Volume, VolumeId, VolumePath};
-
 
 pub struct DirectoryVolume {
     id: VolumeId,
@@ -154,11 +156,11 @@ impl Volume for DirectoryVolume {
         &self.id
     }
 
-    fn list_resources<'a>(&'a self) -> impl Iterator<Item = resource::Resource> + 'a {
-        self.list_files().map(move |path| {
+    fn list_resources<'a>(&'a self) -> Box<dyn Iterator<Item = resource::Resource> + 'a> {
+        Box::new(self.list_files().map(move |path| {
             let vp = self.construct_volume_path(&path).unwrap();
             resource::Resource::from_path(vp)
-        })
+        }))
     }
 
     fn resource_by_id(
