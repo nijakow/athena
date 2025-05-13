@@ -23,17 +23,17 @@ impl Vault {
 
         // Try to create the cache directory if it doesn't exist
         if !cache_path.exists() {
-            std::fs::create_dir_all(&cache_path)
-                .map_err(|_| {
-                    eprintln!("Unable to create cache directory at {:?}", cache_path);
-                    ()
-                })?;
+            std::fs::create_dir_all(&cache_path).map_err(|_| {
+                eprintln!("Unable to create cache directory at {:?}", cache_path);
+                ()
+            })?;
         }
 
-        let volumes = vec![vault::volume::Volume::new(
+        let volumes = vec![vault::volume::DirectoryVolume::new(
             config.vault_path.unwrap(),
             vault::volume::flags::Flags::new().with_zettels(),
-        )];
+        )
+        .into()];
 
         let vault = Self {
             volumes: vault::volume::Volumes::new(volumes),
@@ -119,7 +119,7 @@ impl Vault {
 
     pub fn tick(&self) {
         self.volumes.tick();
-        
+
         if let Ok(mut cache) = self.cache.write() {
             cache.save().ok();
         }
@@ -127,17 +127,18 @@ impl Vault {
 }
 
 impl resource::ResourceInterface for Vault {
-    fn open_for_reading(&self, path: &volume::VolumePath) -> Result<Box<dyn std::io::Read>, std::io::Error> {
+    fn open_for_reading(
+        &self,
+        path: &volume::VolumePath,
+    ) -> Result<Box<dyn std::io::Read>, std::io::Error> {
+        use volume::Volume;
+
         let volume = self
             .volumes
             .volume_by_id(path.volume())
             .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "Volume not found"))?;
 
-        let translated = volume.reconstruct_full_path(&path).ok_or_else(|| {
-            std::io::Error::new(std::io::ErrorKind::NotFound, "Path not found in volume")
-        })?;
-
-        std::fs::File::open(translated).map(|f| Box::new(f) as Box<dyn std::io::Read>)
+        volume.open_path(path)
     }
 }
 

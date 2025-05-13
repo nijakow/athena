@@ -10,14 +10,39 @@ pub mod path;
 pub type VolumeId = crate::util::hashing::Sha256;
 pub type VolumePath = path::VolumePath;
 
-pub struct Volume {
+pub trait Volume {
+    fn id(&self) -> &VolumeId;
+    fn list_resources<'a>(&'a self) -> impl Iterator<Item = resource::Resource> + 'a;
+
+    fn map_resource_func<'a, T>(
+        &'a self,
+        func: impl Fn(&resource::Resource) -> T + 'a,
+    ) -> impl Iterator<Item = T> + 'a {
+        self.list_resources().map(move |resource| func(&resource))
+    }
+
+    fn resource_by_id(
+        &self,
+        id: &entity::Id,
+        resource_interface: &dyn resource::ResourceInterface,
+        cache: &mut caching::GlobalCache,
+    ) -> Option<resource::Resource>;
+
+    fn tick(&self);
+
+    fn find_directory(&self, purpose: info::DirectoryPurpose) -> Option<std::path::PathBuf>;
+
+    fn open_path(&self, path: &VolumePath) -> Result<Box<dyn std::io::Read>, std::io::Error>;
+}
+
+pub struct DirectoryVolume {
     id: VolumeId,
     base_path: std::path::PathBuf,
     is_home: bool,
     file_name_cache: std::collections::HashMap<String, std::path::PathBuf>,
 }
 
-impl Volume {
+impl DirectoryVolume {
     fn is_path_excluded(path: &std::path::Path) -> bool {
         // Check if any of the subpaths start with "."
         for component in path.components() {
@@ -66,10 +91,6 @@ impl Volume {
         }
     }
 
-    pub fn id(&self) -> &VolumeId {
-        &self.id
-    }
-
     fn construct_volume_path(&self, path: &std::path::Path) -> Option<path::VolumePath> {
         let path_relative_to_base = path
             .strip_prefix(&self.base_path)
@@ -97,7 +118,7 @@ impl Volume {
             entry: Result<walkdir::DirEntry, walkdir::Error>,
         ) -> Option<std::path::PathBuf> {
             let entry = entry.unwrap();
-            if entry.file_type().is_file() && !Volume::is_path_excluded(entry.path()) {
+            if entry.file_type().is_file() && !DirectoryVolume::is_path_excluded(entry.path()) {
                 Some(entry.into_path())
             } else {
                 None
@@ -107,13 +128,6 @@ impl Volume {
         walkdir::WalkDir::new(&self.base_path)
             .into_iter()
             .filter_map(condition)
-    }
-
-    pub fn list_resources<'a>(&'a self) -> impl Iterator<Item = resource::Resource> + 'a {
-        self.list_files().map(move |path| {
-            let vp = self.construct_volume_path(&path).unwrap();
-            resource::Resource::from_path(vp)
-        })
     }
 
     pub fn map_resource_func<'a, T>(
@@ -159,8 +173,21 @@ impl Volume {
         self.file_by_short_name(name)
             .map(|path| resource::Resource::from_path(self.construct_volume_path(&path).unwrap()))
     }
+}
 
-    pub fn resource_by_id(
+impl Volume for DirectoryVolume {
+    fn id(&self) -> &VolumeId {
+        &self.id
+    }
+
+    fn list_resources<'a>(&'a self) -> impl Iterator<Item = resource::Resource> + 'a {
+        self.list_files().map(move |path| {
+            let vp = self.construct_volume_path(&path).unwrap();
+            resource::Resource::from_path(vp)
+        })
+    }
+
+    fn resource_by_id(
         &self,
         id: &entity::Id,
         resource_interface: &dyn resource::ResourceInterface,
@@ -183,11 +210,9 @@ impl Volume {
         }
     }
 
-    pub fn tick(&self) {
-        // Do nothing
-    }
+    fn tick(&self) {}
 
-    pub fn find_directory(&self, purpose: info::DirectoryPurpose) -> Option<std::path::PathBuf> {
+    fn find_directory(&self, purpose: info::DirectoryPurpose) -> Option<std::path::PathBuf> {
         match purpose {
             info::DirectoryPurpose::UserDirectory(info::UserDirectory::Home) => {
                 if self.is_home {
@@ -199,22 +224,83 @@ impl Volume {
             _ => None,
         }
     }
+
+    fn open_path(&self, path: &VolumePath) -> Result<Box<dyn std::io::Read>, std::io::Error> {
+        let translated = self.reconstruct_full_path(path).ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::NotFound, "Path not found in volume")
+        })?;
+
+        std::fs::File::open(translated).map(|f| Box::new(f) as Box<dyn std::io::Read>)
+    }
 }
 
-pub type VolumeArc = std::sync::Arc<Volume>;
+pub enum VolumeEnum {
+    Directory(DirectoryVolume),
+}
+
+impl From<DirectoryVolume> for VolumeEnum {
+    fn from(volume: DirectoryVolume) -> Self {
+        VolumeEnum::Directory(volume)
+    }
+}
+
+impl Volume for VolumeEnum {
+    fn id(&self) -> &VolumeId {
+        match self {
+            VolumeEnum::Directory(v) => v.id(),
+        }
+    }
+
+    fn list_resources<'a>(&'a self) -> impl Iterator<Item = resource::Resource> + 'a {
+        match self {
+            VolumeEnum::Directory(v) => v.list_resources(),
+        }
+    }
+
+    fn resource_by_id(
+        &self,
+        id: &entity::Id,
+        resource_interface: &dyn resource::ResourceInterface,
+        cache: &mut caching::GlobalCache,
+    ) -> Option<resource::Resource> {
+        match self {
+            VolumeEnum::Directory(v) => v.resource_by_id(id, resource_interface, cache),
+        }
+    }
+
+    fn tick(&self) {
+        match self {
+            VolumeEnum::Directory(v) => v.tick(),
+        }
+    }
+
+    fn find_directory(&self, purpose: info::DirectoryPurpose) -> Option<std::path::PathBuf> {
+        match self {
+            VolumeEnum::Directory(v) => v.find_directory(purpose),
+        }
+    }
+
+    fn open_path(&self, path: &VolumePath) -> Result<Box<dyn std::io::Read>, std::io::Error> {
+        match self {
+            VolumeEnum::Directory(v) => v.open_path(path),
+        }
+    }
+}
+
+pub type VolumeArc = std::sync::Arc<VolumeEnum>;
 
 pub struct Volumes {
     vols: Vec<VolumeArc>,
 }
 
 impl Volumes {
-    pub fn new(vols: Vec<Volume>) -> Self {
+    pub fn new(vols: Vec<VolumeEnum>) -> Self {
         Self {
             vols: vols.into_iter().map(|v| std::sync::Arc::new(v)).collect(),
         }
     }
 
-    pub fn volume_by_id(&self, id: &VolumeId) -> Option<&Volume> {
+    pub fn volume_by_id(&self, id: &VolumeId) -> Option<&VolumeEnum> {
         self.vols.iter().find_map(|volume| {
             if volume.id() == id {
                 Some(volume.as_ref())
@@ -224,7 +310,7 @@ impl Volumes {
         })
     }
 
-    pub fn volume_by_id_mut(&mut self, id: &VolumeId) -> Option<&mut Volume> {
+    pub fn volume_by_id_mut(&mut self, id: &VolumeId) -> Option<&mut VolumeEnum> {
         self.vols
             .iter_mut()
             .find_map(|volume| std::sync::Arc::get_mut(volume).filter(|v| v.id() == id))
