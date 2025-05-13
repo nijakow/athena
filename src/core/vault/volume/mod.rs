@@ -70,7 +70,7 @@ impl Volume {
         &self.id
     }
 
-    pub fn construct_volume_path(&self, path: &std::path::Path) -> Option<path::VolumePath> {
+    fn construct_volume_path(&self, path: &std::path::Path) -> Option<path::VolumePath> {
         let path_relative_to_base = path
             .strip_prefix(&self.base_path)
             .ok()
@@ -92,7 +92,7 @@ impl Volume {
         Some(full_path)
     }
 
-    pub fn list_files(&self) -> impl Iterator<Item = std::path::PathBuf> {
+    fn list_files(&self) -> impl Iterator<Item = std::path::PathBuf> {
         fn condition(
             entry: Result<walkdir::DirEntry, walkdir::Error>,
         ) -> Option<std::path::PathBuf> {
@@ -123,7 +123,7 @@ impl Volume {
         self.list_resources().map(move |resource| func(&resource))
     }
 
-    pub fn file_if_exists<S: ToString>(&self, name: S) -> Option<std::path::PathBuf> {
+    fn file_if_exists<S: ToString>(&self, name: S) -> Option<std::path::PathBuf> {
         let name = name.to_string();
         self.file_name_cache.get(&name).cloned()
     }
