@@ -178,6 +178,7 @@ impl Volume {
 
                 None
             }
+            entity::Id::Email(_) => None, // TODO!
             entity::Id::Basic(name) => self.resource_by_short_name(name),
         }
     }

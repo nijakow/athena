@@ -5,6 +5,7 @@ use crate::util::hashing::Sha256;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Id {
     Sha256(Sha256),
+    Email(Sha256),
     Basic(String),
 }
 
@@ -27,6 +28,11 @@ impl Id {
             let sha256 = Sha256::from_string(sha256_string)?;
 
             Ok(Id::Sha256(sha256))
+        } else if string.starts_with("email-") {
+            let sha256_string = string.trim_start_matches("email-");
+            let sha256 = Sha256::from_string(sha256_string)?;
+
+            Ok(Id::Email(sha256))
         } else {
             Ok(Id::Basic(string))
         }
@@ -59,15 +65,13 @@ impl Id {
     pub fn id(&self) -> String {
         match self {
             Id::Sha256(sha256) => format!("sha256-{}", sha256.as_string()),
+            Id::Email(sha256) => format!("email-{}", sha256.as_string()),
             Id::Basic(string) => string.clone(),
         }
     }
 
     pub fn as_readable_string(&self) -> String {
-        match self {
-            Id::Sha256(sha256) => sha256.as_string(),
-            Id::Basic(string) => string.clone(),
-        }
+        self.id()
     }
 
     pub fn as_safe_uri(&self) -> String {
@@ -79,10 +83,7 @@ impl Id {
     }
 
     pub fn as_obsidian_uri(&self) -> String {
-        let id = match self {
-            Id::Sha256(sha256) => sha256.as_string(),
-            Id::Basic(string) => string.clone(),
-        };
+        let id = self.id(); // TODO: File extension in SHA256 IDs must be added!
 
         format!("obsidian://open?file={}", id)
     }
@@ -94,10 +95,7 @@ impl Id {
 
 impl serde::Serialize for Id {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let stringified = match self {
-            Id::Sha256(sha256) => sha256.as_string(),
-            Id::Basic(string) => string.clone(),
-        };
+        let stringified = self.id();
 
         stringified.serialize(serializer)
     }
