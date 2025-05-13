@@ -78,6 +78,15 @@ impl Id {
         format!("/raw/{}", self.id())
     }
 
+    pub fn as_obsidian_uri(&self) -> String {
+        let id = match self {
+            Id::Sha256(sha256) => sha256.as_string(),
+            Id::Basic(string) => string.clone(),
+        };
+
+        format!("obsidian://open?file={}", id)
+    }
+
     pub fn as_hash(&self) -> Sha256 {
         Sha256::hash_string(self.id())
     }

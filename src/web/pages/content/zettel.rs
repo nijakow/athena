@@ -128,6 +128,8 @@ pub fn generate_show_zettel(
             a href=(format!("{}?action=edit", id.as_safe_uri())) { "Edit" }
             " "
             a href=(format!("{}", id.as_safe_download_uri())) { "Raw" }
+            " "
+            a href=(format!("{}", id.as_obsidian_uri())) { "Open in Obsidian" }
             br;
             (generate_metadata_box(&zettel.header, &conversion_context))
             br;
