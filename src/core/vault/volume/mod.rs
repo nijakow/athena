@@ -38,13 +38,7 @@ pub trait Volume {
 
 
 pub enum VolumeEnum {
-    Directory(volumes::DirectoryVolume),
-}
-
-impl From<volumes::DirectoryVolume> for VolumeEnum {
-    fn from(volume: volumes::DirectoryVolume) -> Self {
-        VolumeEnum::Directory(volume)
-    }
+    Directory(volumes::directory::DirectoryVolume),
 }
 
 impl Volume for VolumeEnum {

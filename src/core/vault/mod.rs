@@ -29,7 +29,7 @@ impl Vault {
             })?;
         }
 
-        let volumes = vec![vault::volume::volumes::DirectoryVolume::new(
+        let volumes = vec![vault::volume::volumes::directory::DirectoryVolume::new(
             config.vault_path.unwrap(),
             vault::volume::flags::Flags::new().with_zettels(),
         )
