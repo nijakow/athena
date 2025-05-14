@@ -1,6 +1,6 @@
 use crate::core::vault::{self, caching, resource};
 
-use crate::util::hashing::Sha256;
+use crate::util::hashing::{self, Sha256};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Id {
@@ -47,18 +47,30 @@ impl Id {
         resource_interface: &dyn resource::ResourceInterface,
         cache: &mut caching::GlobalCache,
     ) -> Id {
-        if let Some(hash) = resource.content_hash(resource_interface, cache) {
-            Id::from_sha256(hash.clone())
-        } else {
-            let file_name_without_extension = resource
-                .volume_path()
-                .path()
-                .file_stem()
-                .unwrap()
-                .to_string_lossy()
-                .to_string();
+        match resource.resource_type() {
+            Some(resource::Type::Other(resource::types::OtherType::Email)) => {
+                let file_title = resource.file_name_without_extension();
+                if let Some(Ok(sha256)) = file_title.map(hashing::Sha256::from_string) {
+                    Id::Email(sha256)
+                } else {
+                    Id::Basic(resource.volume_path().path().to_string_lossy().to_string())
+                }
+            }
+            _ => {
+                if let Some(hash) = resource.content_hash(resource_interface, cache) {
+                    Id::from_sha256(hash.clone())
+                } else {
+                    let file_name_without_extension = resource
+                        .volume_path()
+                        .path()
+                        .file_stem()
+                        .unwrap()
+                        .to_string_lossy()
+                        .to_string();
 
-            Id::from_basic(file_name_without_extension)
+                    Id::from_basic(file_name_without_extension)
+                }
+            }
         }
     }
 

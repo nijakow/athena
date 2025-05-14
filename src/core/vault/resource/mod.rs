@@ -12,6 +12,7 @@ pub enum Type {
     Image(types::ImageType),
     Audio(types::AudioType),
     Video(types::VideoType),
+    Other(types::OtherType),
     Unknown,
 }
 
@@ -34,6 +35,7 @@ impl Type {
             Type::Video(types::VideoType::Mp4) => vec!["mp4"],
             Type::Video(types::VideoType::Webm) => vec!["webm"],
             Type::Video(types::VideoType::Ogg) => vec!["ogg"],
+            Type::Other(types::OtherType::Email) => vec!["eml"],
             Type::Unknown => vec![],
         }
     }
@@ -77,6 +79,7 @@ impl Type {
             Type::Video(types::VideoType::Mp4) => "video/mp4",
             Type::Video(types::VideoType::Webm) => "video/webm",
             Type::Video(types::VideoType::Ogg) => "video/ogg",
+            Type::Other(types::OtherType::Email) => "message/rfc822",
             Type::Unknown => "application/octet-stream",
         }
     }
@@ -134,6 +137,18 @@ impl Resource {
         let resource_type = extension.and_then(|e| Type::from_extension(e));
 
         Metadata { resource_type }
+    }
+
+    pub fn resource_type(&self) -> Option<Type> {
+        self.metadata().resource_type
+    }
+
+    pub fn file_name_without_extension(&self) -> Option<String> {
+        self.path
+            .path()
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .map(|s| s.to_string())
     }
 
     pub fn volume_path(&self) -> &volume::VolumePath {

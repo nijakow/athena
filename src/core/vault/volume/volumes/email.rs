@@ -1,5 +1,10 @@
-use crate::{core::vault::{resource, volume::{path, Volume, VolumeEnum, VolumeId}}, util::hashing};
-
+use crate::{
+    core::vault::{
+        resource,
+        volume::{path, Volume, VolumeEnum, VolumeId},
+    },
+    util::hashing,
+};
 
 pub struct EmailVolume {
     id: VolumeId,
@@ -58,8 +63,8 @@ impl EmailVolume {
             }
         };
 
-        // Try .eml and .eml.gz
-        try_extension("eml").or_else(|| try_extension("eml.gz"))
+        // Try .eml (and later perhaps .eml.gz)
+        try_extension("eml")
     }
 }
 
@@ -69,15 +74,27 @@ impl Volume for EmailVolume {
     }
 
     fn list_resources<'a>(&'a self) -> Box<dyn Iterator<Item = resource::Resource> + 'a> {
-        Box::new(self.base_path.read_dir().unwrap().filter_map(|entry| {
-            let entry = entry.unwrap();
-            let path = entry.path();
-            if path.is_file() {
-                let vp = self.construct_volume_path(&path).unwrap();
-                Some(resource::Resource::from_path(vp))
-            } else {
-                None
-            }
+        // Use walkdir crate to list all .eml and .eml.gz files
+        let files = walkdir::WalkDir::new(&self.base_path)
+            .into_iter()
+            .filter_map(|entry| {
+                let entry = entry.ok()?;
+                if entry.file_type().is_file() {
+                    let path = entry.into_path();
+                    let ext = path.extension()?.to_string_lossy();
+                    if ext == "eml" {
+                        Some(path)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            });
+        
+        Box::new(files.map(move |path| {
+            let vp = self.construct_volume_path(&path).unwrap();
+            resource::Resource::from_path(vp)
         }))
     }
 
@@ -101,14 +118,20 @@ impl Volume for EmailVolume {
     }
 
     fn tick(&self) {
-        todo!()
+        // Do nothing
     }
 
-    fn find_directory(&self, _purpose: crate::core::vault::volume::info::DirectoryPurpose) -> Option<std::path::PathBuf> {
+    fn find_directory(
+        &self,
+        _purpose: crate::core::vault::volume::info::DirectoryPurpose,
+    ) -> Option<std::path::PathBuf> {
         None
     }
 
-    fn open_path(&self, path: &crate::core::vault::volume::VolumePath) -> Result<Box<dyn std::io::Read>, std::io::Error> {
+    fn open_path(
+        &self,
+        path: &crate::core::vault::volume::VolumePath,
+    ) -> Result<Box<dyn std::io::Read>, std::io::Error> {
         let translated = self.reconstruct_full_path(path).ok_or_else(|| {
             std::io::Error::new(std::io::ErrorKind::NotFound, "Path not found in volume")
         })?;
@@ -116,4 +139,3 @@ impl Volume for EmailVolume {
         std::fs::File::open(translated).map(|f| Box::new(f) as Box<dyn std::io::Read>)
     }
 }
-

@@ -29,11 +29,19 @@ impl Vault {
             })?;
         }
 
-        let volumes = vec![vault::volume::volumes::directory::DirectoryVolume::new(
-            config.vault_path.unwrap(),
-            vault::volume::flags::Flags::new().with_zettels(),
-        )
-        .into()];
+        let home_dir = std::env::var("HOME").ok();
+
+        let volumes = vec![
+            vault::volume::volumes::directory::DirectoryVolume::new(
+                config.vault_path.unwrap(),
+                vault::volume::flags::Flags::new().with_zettels(),
+            )
+            .into(),
+            vault::volume::volumes::email::EmailVolume::new(
+                std::path::PathBuf::from(format!("{}/Dokumente/MailSaver2", home_dir.unwrap_or_else(|| ".".to_string()))),
+            )
+            .into(),
+        ];
 
         let vault = Self {
             volumes: vault::volume::Volumes::new(volumes),

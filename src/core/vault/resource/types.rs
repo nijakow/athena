@@ -1,3 +1,5 @@
+use super::Type;
+
 
 #[derive(Debug, Clone, Copy, enum_iterator::Sequence)]
 pub enum ZettelType {
@@ -33,4 +35,9 @@ pub enum VideoType {
     Mp4,
     Webm,
     Ogg,
+}
+
+#[derive(Debug, Clone, Copy, enum_iterator::Sequence)]
+pub enum OtherType {
+    Email,
 }
