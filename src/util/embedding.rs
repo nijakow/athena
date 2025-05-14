@@ -142,6 +142,16 @@ pub fn embed_file_for_id<S: ToString>(
                 }
             }
         }
+        resource::Type::Other(resource::types::OtherType::Email) => {
+            // Create a code block with the email content
+            if let Ok(content) = std::str::from_utf8(file.content()) {
+                maud::html! {
+                    pre { (content) }
+                }
+            } else {
+                content_not_displayed()
+            }
+        }
         _ => content_not_displayed(),
     }
 }
